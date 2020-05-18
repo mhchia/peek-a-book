@@ -1,0 +1,49 @@
+{
+  "name": "peek-a-book",
+  "version": "0.0.1",
+  "description": "A private order matching system. https://ethresear.ch/t/peekabook-private-order-matching/6987",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "test": "jest --config jestconfig.json",
+    "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
+    "lint": "tslint -p tsconfig.json",
+    "build": "tsc",
+    "precommit": "npm run lint && npm run format",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm test && npm run lint"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mhchia/peek-a-book.git"
+  },
+  "files": [
+    "lib/**/*"
+  ],
+  "keywords": [
+    "smp"
+  ],
+  "author": "Kevin Mai-Hsuan Chia(mhchia) <kevin@mhchia.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mhchia/peek-a-book/issues"
+  },
+  "homepage": "https://github.com/mhchia/peek-a-book#readme",
+  "devDependencies": {
+    "@types/jest": "^25.2.2",
+    "husky": "^4.2.5",
+    "jest": "^26.0.1",
+    "lint-staged": "^10.2.2",
+    "prettier": "^2.0.5",
+    "ts-jest": "^26.0.0",
+    "tslint": "^6.1.2",
+    "tslint-config-prettier": "^1.18.0",
+    "typescript": "^3.9.2"
+  },
+  "lint-staged": {
+    "*.js": [
+      "prettier --write",
+      "git add"
+    ]
+  }
+}
