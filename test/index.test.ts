@@ -1,5 +1,5 @@
-import { Greeter } from '../src/index';
+import { createSMPStateMachine } from '../src/index';
 
-test('My Greeter', () => {
-  expect(Greeter('Carl')).toBe('Hello Carl');
+test('test createSMPStateMachine', () => {
+  createSMPStateMachine();
 });

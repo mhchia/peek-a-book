@@ -45,5 +45,10 @@
       "prettier --write",
       "git add"
     ]
+  },
+  "dependencies": {
+    "@types/bn.js": "^4.11.6",
+    "bn.js": "^5.1.1",
+    "js-smp": "^0.1.1"
   }
 }
