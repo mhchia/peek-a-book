@@ -1,4 +1,3 @@
-import BN from 'bn.js';
 import Peer from 'peerjs';
 
 import { SMPStateMachine } from 'js-smp';
@@ -46,12 +45,12 @@ function startPeer() {
   // Emitted when a new data connection is established from a remote peer.
   localPeer.on('connection', (conn: Peer.DataConnection) => {
     // A remote peer has connected us!
-    console.log(`Received connection from ${conn.peer}`);
+    console.log(`Received a connection from ${conn.peer}`);
 
     // Emitted when the connection is established and ready-to-use.
     // Ref: https://peerjs.com/docs.html#dataconnection
     conn.on('open', async () => {
-      const stateMachine = new SMPStateMachine(new BN(secretElement.value));
+      const stateMachine = new SMPStateMachine(secretElement.value);
 
       // Emitted when either you or the remote peer closes the data connection.
       // Not supported by Firefox.
@@ -78,7 +77,7 @@ function connectRemotePeer() {
   conn.on('open', async () => {
     console.log(`Connection to ${conn.peer} is ready.`);
 
-    const stateMachine = new SMPStateMachine(new BN(secretElement.value));
+    const stateMachine = new SMPStateMachine(secretElement.value);
     const firstMsg = stateMachine.transit(null);
     if (firstMsg === null) {
       throw new Error('msg1 should not be null');
