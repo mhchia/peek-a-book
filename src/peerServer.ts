@@ -10,8 +10,6 @@ const peerServer = expressPeerServer(server);
 
 app.use(defaultServerConfig.path, peerServer);
 
-app.use("/", express.static('./static/'));
-
 peerServer.on('connection', (id: any) => {
     console.log(`A client connected : ${id}`);
 })
