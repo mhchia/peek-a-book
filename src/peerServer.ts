@@ -39,7 +39,7 @@ function runServer(): void {
     if (isSSLSupported) {
         server = https.createServer({ key: key, cert: cert }, app);
     } else {
-        server = https.createServer(app);
+        server = http.createServer(app);
     }
 
     let peerServer;
