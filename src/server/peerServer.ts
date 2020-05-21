@@ -8,7 +8,7 @@ import https = require('https');
 //  "Cannot use namespace 'EventEmitter' as a type."
 const expressPeerServer = require('peer').ExpressPeerServer;
 
-import { defaultServerConfig } from "./config";
+import { defaultPeerConfig } from "../config";
 
 const certDir = __dirname + '/../certs';
 const keyPath = `${certDir}/privkey.pem`;
@@ -59,12 +59,12 @@ function runServer(): void {
     }
 
     // TODO: Confirm this is correct
-    app.use(defaultServerConfig.path, peerServer);
-
-    server.listen(defaultServerConfig.port);
+    app.use(defaultPeerConfig.path, peerServer);
 
     // FIXME: Remove it later when we don't need debugging
     app.use("/", express.static('./static/'));
+
+    server.listen(defaultPeerConfig.port);
 
     peerServer.on('connection', (id: any) => {
         console.log(`A client connected : ${id}`);
@@ -75,7 +75,7 @@ function runServer(): void {
     });
     // TODO: Listen to more events
 
-    console.log("Server is running!")
+    console.log("PeerServer is ready!");
 }
 
 runServer();
