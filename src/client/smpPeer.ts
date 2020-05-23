@@ -4,35 +4,45 @@ import { SMPStateMachine } from 'js-smp';
 import { TLV } from 'js-smp/lib/msgs';
 
 import { defaultPeerConfig } from '../config';
+import { ServerUnconnected } from '../exceptions';
 
 type TPeerID = string;
 
 const timeSleep = 10;
 
 class SMPPeer {
+  secret: TPeerID;
   peer?: Peer;
-  conns: Map<TPeerID, Peer.DataConnection>;
 
   constructor(
-    readonly secret: string,
-    readonly localPeerID?: TPeerID,
+    secret: TPeerID,
     readonly peerConfig = defaultPeerConfig,
   ) {
-    this.conns = new Map();
+    this.secret = secret;
   }
 
-  async connectToPeerServer(): Promise<void> {
-    const localPeer = new Peer(this.localPeerID, this.peerConfig);
+  get id(): string {
+    if (this.peer === undefined) {
+      throw new ServerUnconnected("need to be connected to a peer server to discover other peers");
+    }
+    return this.peer.id;
+  }
+
+  async connectToPeerServer(expectedID?: TPeerID): Promise<void> {
+    const localPeer = new Peer(expectedID, this.peerConfig);
 
     // Emitted when a new data connection is established from a remote peer.
     localPeer.on('connection', (conn: Peer.DataConnection) => {
       // A remote peer has connected us!
       console.log(`Received a connection from ${conn.peer}`);
+      // NOTE: Explicitly reference to this secret, in case the callback of `conn.on('open')` is
+      //  called after `this.secret` is changed.
+      const secret = this.secret;
 
       // Emitted when the connection is established and ready-to-use.
       // Ref: https://peerjs.com/docs.html#dataconnection
       conn.on('open', async () => {
-        const stateMachine = new SMPStateMachine(this.secret);
+        const stateMachine = new SMPStateMachine(secret);
 
         // Emitted when either you or the remote peer closes the data connection.
         // Not supported by Firefox.
@@ -44,35 +54,48 @@ class SMPPeer {
         // TODO: Add `timeout`
         await waitUntilStateMachineFinished(stateMachine);
         console.log(
-          `Finished SMP with ${conn.peer}: result=${stateMachine.getResult()}`
+          `Finished SMP with peer=${conn.peer}: result=${stateMachine.getResult()}`
         );
         // TODO: Add `close` event
       });
     });
-    // Wait until connected to the peer server
-    const _connectToServer = async() => {
-      return new Promise((resolve, reject) => {
-        // Emitted when a connection to the PeerServer is established.
-        localPeer.on('open', (id: any) => {
-          resolve(id);
-          this.peer = localPeer;
-        });
+    // Wait until we are connected to the PeerServer
+    await new Promise((resolve, reject) => {
+      // Emitted when a connection to the PeerServer is established.
+      localPeer.on('open', (id: TPeerID) => {
+        // If we expect our PeerID to be `expectedID` but the peer server returns another one,
+        // we should be aware that something is wrong between us and the server.
+        if (expectedID !== undefined && id !== expectedID) {
+          reject(new Error(
+            'the returned id from the peer server is not the one we expect: ' +
+            `returned=${id}, expected=${expectedID}`
+          ));
+        }
+        resolve(id);
+        this.peer = localPeer;
       });
-    }
-    await _connectToServer();
+    });
   }
 
-  async connectRemotePeer(remotePeerID: TPeerID) {
+  async runSMP(remotePeerID: TPeerID) {
     if (this.peer === undefined) {
-      // TODO: Add exceptions
-      throw new Error("need to be connected to a peer server to discover other peers");
+      throw new ServerUnconnected("need to be connected to a peer server to discover other peers");
     }
     const conn = this.peer.connect(remotePeerID, { reliable: true });
     console.log(`Connecting ${remotePeerID}...`);
+    // NOTE: Explicitly reference to this secret, in case the callback of `conn.on('open')` is
+    //  called after `this.secret` is changed.
+    const secret = this.secret;
     conn.on('open', async () => {
       console.log(`Connection to ${conn.peer} is ready.`);
-
-      const stateMachine = new SMPStateMachine(this.secret);
+      // if (this.peer === undefined) {
+      //   throw new ServerUnconnected("need to be connected to a peer server to discover other peers");
+      // }
+      // this.peer.disconnect();
+      // if (!this.peer.disconnected) {
+      //   throw new Error('is not connected after calling `disconnect`');
+      // }
+      const stateMachine = new SMPStateMachine(secret);
       const firstMsg = stateMachine.transit(null);
       if (firstMsg === null) {
         throw new Error('msg1 should not be null');
@@ -82,12 +105,10 @@ class SMPPeer {
       // TODO: Add `timeout`
       await waitUntilStateMachineFinished(stateMachine);
       console.log(
-        `Finished SMP with ${conn.peer}: result=${stateMachine.getResult()}`
+        `Finished SMP with peer=${conn.peer}: result=${stateMachine.getResult()}`
       );
     });
   }
-
-  // TODO: Add disconnet peer server
 }
 
 function createConnDataHandler(

@@ -1,47 +1,72 @@
-import Peer from 'peerjs';
-
 import { SMPPeer } from './client/smpPeer';
 
 const localPeerParamName = 'localPeer';
-const localPeerID = localPeerParamName;
+const localPeerDOMID = localPeerParamName;
 const remotePeerParamName = 'remotePeer';
-const remotePeerID = remotePeerParamName;
+const remotePeerDOMID = remotePeerParamName;
 const secretParamName = 'secret';
-const secretID = secretParamName;
-const startButtonID = 'startButton';
-const connectButtonID = 'connectButton';
+const secretDOMID = secretParamName;
+const startButtonDOMID = 'startButton';
+const connectButtonDOMID = 'connectButton';
 
 let localPeer: SMPPeer;
 
 const localPeerElement = setTextareaValueWithParam(
-  localPeerID,
+  localPeerDOMID,
   localPeerParamName
 );
 const remotePeerElement = setTextareaValueWithParam(
-  remotePeerID,
+  remotePeerDOMID,
   remotePeerParamName
 );
-const secretElement = setTextareaValueWithParam(secretID, secretParamName);
+const secretElement = setTextareaValueWithParam(secretDOMID, secretParamName);
 const startButton = document.querySelector(
-  `button#${startButtonID}`
+  `button#${startButtonDOMID}`
 ) as HTMLButtonElement;
 const connectButton = document.querySelector(
-  `button#${connectButtonID}`
+  `button#${connectButtonDOMID}`
 ) as HTMLButtonElement;
 
 startButton.onclick = startPeer;
-connectButton.onclick = connectRemotePeer;
+connectButton.onclick = runSMP;
+secretElement.onchange = updateSecret;
 
 async function startPeer() {
-  localPeer = new SMPPeer(secretElement.value, localPeerElement.value);
-  await localPeer.connectToPeerServer();
+  localPeer = new SMPPeer(secretElement.value);
+  await localPeer.connectToPeerServer(getLocalPeerID());
+  localPeerElement.value = localPeer.id;
 }
 
-async function connectRemotePeer() {
-  await localPeer.connectRemotePeer(remotePeerElement.value);
+async function runSMP() {
+  // TODO: Update HTML if remote id is empty
+  const remotePeerID = getRemotePeerID();
+  await localPeer.runSMP(remotePeerID);
+}
+
+function updateSecret() {
+  if (localPeer !== undefined) {
+    localPeer.secret = secretElement.value;
+  }
 }
 
 /* Utility functions */
+
+function getLocalPeerID(): string | undefined {
+  if (localPeerElement.value === '') {
+    // Let the peer server generate for us
+    return undefined;
+  } else {
+    return localPeerElement.value;
+  }
+}
+
+function getRemotePeerID(): string {
+  if (remotePeerElement.value === '') {
+    throw new Error('remote peer id is empty');
+  } else {
+    return remotePeerElement.value;
+  }
+}
 
 function getGETParam(q: string): string {
   const t = (window.location.search.match(
