@@ -8,7 +8,7 @@ import https = require('https');
 //  "Cannot use namespace 'EventEmitter' as a type."
 const expressPeerServer = require('peer').ExpressPeerServer;
 
-import { defaultPeerConfig } from "../config";
+import { defaultPeerConfig } from "./config";
 
 const certDir = __dirname + '/../certs';
 const keyPath = `${certDir}/privkey.pem`;
