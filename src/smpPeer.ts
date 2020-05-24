@@ -3,8 +3,8 @@ import Peer from 'peerjs';
 import { SMPStateMachine } from 'js-smp';
 import { TLV } from 'js-smp/lib/msgs';
 
-import { defaultPeerConfig } from '../config';
-import { ServerUnconnected } from '../exceptions';
+import { defaultPeerConfig } from './config';
+import { ServerUnconnected } from './exceptions';
 
 type TPeerID = string;
 
@@ -12,7 +12,7 @@ const timeSleep = 10;
 
 class SMPPeer {
   secret: TPeerID;
-  peer?: Peer;
+  private peer?: Peer;
 
   constructor(
     secret: TPeerID,
