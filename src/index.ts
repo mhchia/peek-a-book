@@ -1,4 +1,4 @@
-import { SMPPeer } from './client/smpPeer';
+import { SMPPeer } from './smpPeer';
 
 const localPeerParamName = 'localPeer';
 const localPeerDOMID = localPeerParamName;
@@ -32,6 +32,7 @@ connectButton.onclick = runSMP;
 secretElement.onchange = updateSecret;
 
 async function startPeer() {
+  // TODO: Reconnect whenever the peer id is changed, and report if connected on the page.
   localPeer = new SMPPeer(secretElement.value);
   await localPeer.connectToPeerServer(getLocalPeerID());
   localPeerElement.value = localPeer.id;
