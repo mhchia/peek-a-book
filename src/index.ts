@@ -41,7 +41,10 @@ async function startPeer() {
 async function runSMP() {
   // TODO: Update HTML if remote id is empty
   const remotePeerID = getRemotePeerID();
-  await localPeer.runSMP(remotePeerID);
+  const result = await localPeer.runSMP(remotePeerID);
+  console.log(
+    `Finished SMP with peer=${remotePeerID}: result=${result}`
+  );
 }
 
 function updateSecret() {
