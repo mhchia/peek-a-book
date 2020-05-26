@@ -8,20 +8,39 @@ import { ServerUnconnected } from './exceptions';
 
 const timeSleep = 10;
 
+function createConnDataHandler(stateMachine: SMPStateMachine, conn: Peer.DataConnection) {
+  return (data: ArrayBuffer) => {
+    const tlv = TLV.deserialize(new Uint8Array(data));
+    const replyTLV = stateMachine.transit(tlv);
+    if (replyTLV === null) {
+      return;
+    }
+    conn.send(replyTLV.serialize());
+  };
+}
+
+/* Utility functions */
+
+const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
+
+async function waitUntilStateMachineFinished(stateMachine: SMPStateMachine): Promise<void> {
+  while (!stateMachine.isFinished()) {
+    await sleep(timeSleep);
+  }
+}
+
 class SMPPeer {
   secret: string;
+
   private peer?: Peer;
 
-  constructor(
-    secret: string,
-    readonly peerConfig = defaultPeerConfig,
-  ) {
+  constructor(secret: string, readonly peerConfig = defaultPeerConfig) {
     this.secret = secret;
   }
 
   get id(): string {
     if (this.peer === undefined) {
-      throw new ServerUnconnected("need to be connected to a peer server to discover other peers");
+      throw new ServerUnconnected('need to be connected to a peer server to discover other peers');
     }
     return this.peer.id;
   }
@@ -48,9 +67,7 @@ class SMPPeer {
         conn.on('data', createConnDataHandler(stateMachine, conn));
         // TODO: Add `timeout`
         await waitUntilStateMachineFinished(stateMachine);
-        console.log(
-          `Finished SMP with peer=${conn.peer}: result=${stateMachine.getResult()}`
-        );
+        console.log(`Finished SMP with peer=${conn.peer}: result=${stateMachine.getResult()}`);
         // TODO: Add `close` event
       });
     });
@@ -61,10 +78,12 @@ class SMPPeer {
         // If we expect our PeerID to be `expectedID` but the peer server returns another one,
         // we should be aware that something is wrong between us and the server.
         if (expectedID !== undefined && id !== expectedID) {
-          reject(new Error(
-            'the returned id from the peer server is not the one we expect: ' +
-            `returned=${id}, expected=${expectedID}`
-          ));
+          reject(
+            new Error(
+              'the returned id from the peer server is not the one we expect: ' +
+                `returned=${id}, expected=${expectedID}`,
+            ),
+          );
         }
         resolve(id);
         this.peer = localPeer;
@@ -74,7 +93,7 @@ class SMPPeer {
 
   async runSMP(remotePeerID: string): Promise<boolean> {
     if (this.peer === undefined) {
-      throw new ServerUnconnected("need to be connected to a peer server to discover other peers");
+      throw new ServerUnconnected('need to be connected to a peer server to discover other peers');
     }
     const conn = this.peer.connect(remotePeerID, { reliable: true });
     console.log(`Connecting ${remotePeerID}...`);
@@ -95,28 +114,4 @@ class SMPPeer {
   }
 }
 
-function createConnDataHandler(
-  stateMachine: SMPStateMachine,
-  conn: Peer.DataConnection
-) {
-  return (data: ArrayBuffer) => {
-    const tlv = TLV.deserialize(new Uint8Array(data));
-    const replyTLV = stateMachine.transit(tlv);
-    if (replyTLV === null) {
-      return;
-    }
-    conn.send(replyTLV.serialize());
-  };
-}
-
-/* Utility functions */
-
-const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
-
-async function waitUntilStateMachineFinished(stateMachine: SMPStateMachine): Promise<void> {
-  while (!stateMachine.isFinished()) {
-    await sleep(timeSleep);
-  }
-}
-
-export { SMPPeer };
+export default SMPPeer;

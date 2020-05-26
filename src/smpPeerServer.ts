@@ -1,4 +1,6 @@
-import fs = require("fs");
+import { defaultPeerConfig } from './config';
+
+import fs = require('fs');
 import express = require('express');
 import http = require('http');
 import https = require('https');
@@ -8,74 +10,69 @@ import https = require('https');
 //  "Cannot use namespace 'EventEmitter' as a type."
 const expressPeerServer = require('peer').ExpressPeerServer;
 
-import { defaultPeerConfig } from "./config";
-
-const certDir = __dirname + '/../certs';
+const certDir = `${__dirname}/../certs`;
 const keyPath = `${certDir}/privkey.pem`;
 const certPath = `${certDir}/cert.pem`;
-const errCodeFileNotFound = "ENOENT";
+const errCodeFileNotFound = 'ENOENT';
 
 function runServer(): void {
-    let isSSLSupported;
-    let key;
-    let cert;
+  let isSSLSupported;
+  let key;
+  let cert;
 
-    try {
-        key = fs.readFileSync(keyPath);
-        cert = fs.readFileSync(certPath);
-        isSSLSupported = true;
-    } catch (err) {
-        if (err.code === errCodeFileNotFound) {
-            console.log("Couldn't find certs. Running without SSL...")
-            isSSLSupported = false;
-        } else {
-            throw err;
-        }
-    }
-
-    const app = express();
-
-    let server: https.Server | http.Server;
-    if (isSSLSupported) {
-        server = https.createServer({ key: key, cert: cert }, app);
+  try {
+    key = fs.readFileSync(keyPath);
+    cert = fs.readFileSync(certPath);
+    isSSLSupported = true;
+  } catch (err) {
+    if (err.code === errCodeFileNotFound) {
+      console.log("Couldn't find certs. Running without SSL...");
+      isSSLSupported = false;
     } else {
-        server = http.createServer(app);
+      throw err;
     }
+  }
 
-    let peerServer;
-    if (isSSLSupported) {
-        // Sanity check
-        if (key === undefined || cert === undefined) {
-            throw new Error('key or cert is undefined, but we should have it loaded');
-        }
-        peerServer = expressPeerServer(
-            server,
-            {
-                ssl: { key: key.toString('utf8'), cert: cert.toString('utf8') },
-            }
-        );
-    } else {
-        peerServer = expressPeerServer(server);
+  const app = express();
+
+  let server: https.Server | http.Server;
+  if (isSSLSupported) {
+    server = https.createServer({ key, cert }, app);
+  } else {
+    server = http.createServer(app);
+  }
+
+  let peerServer;
+  if (isSSLSupported) {
+    // Sanity check
+    if (key === undefined || cert === undefined) {
+      throw new Error('key or cert is undefined, but we should have it loaded');
     }
-
-    // TODO: Confirm this is correct
-    app.use(defaultPeerConfig.path, peerServer);
-
-    // FIXME: Remove it later when we don't need debugging
-    app.use("/", express.static('./static/'));
-
-    server.listen(defaultPeerConfig.port);
-
-    peerServer.on('connection', (id: any) => {
-        console.log(`A client connected : ${id}`);
+    peerServer = expressPeerServer(server, {
+      ssl: { key: key.toString('utf8'), cert: cert.toString('utf8') },
     });
+  } else {
+    peerServer = expressPeerServer(server);
+  }
 
-    peerServer.on('disconnect', (id: any) => {
-        console.log(`A client say ~ bye bye : ${id}`);
-    });
-    // TODO: Listen to more events
+  // TODO: Confirm this is correct
+  app.use(defaultPeerConfig.path, peerServer);
 
-    console.log("PeerServer is ready!");
+  // FIXME: Remove it later when we don't need debugging
+  app.use('/', express.static('./static/'));
+
+  server.listen(defaultPeerConfig.port);
+
+  peerServer.on('connection', (id: string) => {
+    console.log(`A client connected : ${id}`);
+  });
+
+  peerServer.on('disconnect', (id: string) => {
+    console.log(`A client say ~ bye bye : ${id}`);
+  });
+  // TODO: Listen to more events
+
+  console.log('PeerServer is ready!');
 }
 
 runServer();

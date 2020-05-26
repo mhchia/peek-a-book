@@ -26,4 +26,4 @@ class ServerUnconnected extends SMPPeerError {
   }
 }
 
-export { ServerUnconnected };
+export { SMPPeerError, ServerUnconnected };
