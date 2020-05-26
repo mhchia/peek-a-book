@@ -2,14 +2,14 @@
   "name": "peek-a-book",
   "version": "0.0.1",
   "description": "A private order matching system. https://ethresear.ch/t/peekabook-private-order-matching/6987",
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
+  "main": "lib/smpPeer.js",
+  "types": "lib/smpPeer.d.ts",
   "scripts": {
     "test": "tsdx test",
-    "lint": "tsdx lint",
+    "lint": "tsdx lint src test demo/ts",
     "build": "tsc",
-    "prepare": "npm run build",
-    "bundle": "npx webpack --config webpack.config.js"
+    "bundle": "npx webpack --config webpack.config.js",
+    "build-demo": "npx webpack --config demo/webpack.config.js"
   },
   "prettier": {
     "printWidth": 120,
@@ -33,11 +33,13 @@
   },
   "homepage": "https://github.com/mhchia/peek-a-book#readme",
   "devDependencies": {
+    "@types/jest": "^25.2.3",
     "husky": "^4.2.5",
-    "tsdx": "^0.13.2",
-    "typescript": "^3.9.2",
-    "tslib": "^2.0.0",
     "ts-loader": "^7.0.4",
+    "tsdx": "^0.13.2",
+    "tslib": "^2.0.0",
+    "typescript": "^3.9.2",
+    "prettier": "^2.0.5",
     "webpack": "^4.43.0",
     "webpack-cli": "^3.3.11"
   },
