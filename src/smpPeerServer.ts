@@ -59,7 +59,7 @@ function runServer(): void {
   app.use(defaultPeerConfig.path, peerServer);
 
   // FIXME: Remove it later when we don't need debugging
-  app.use('/', express.static('./static/'));
+  app.use('/', express.static('./demo/'));
 
   server.listen(defaultPeerConfig.port);
 
