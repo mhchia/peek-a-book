@@ -34,7 +34,7 @@ class SMPPeer {
 
   private peer?: Peer;
 
-  constructor(secret: string, readonly peerConfig = defaultPeerConfig) {
+  constructor(secret: string, readonly localPeerID?: string, readonly peerConfig = defaultPeerConfig) {
     this.secret = secret;
   }
 
@@ -45,8 +45,8 @@ class SMPPeer {
     return this.peer.id;
   }
 
-  async connectToPeerServer(expectedID?: string): Promise<void> {
-    const localPeer = new Peer(expectedID, this.peerConfig);
+  async connectToPeerServer(): Promise<void> {
+    const localPeer = new Peer(this.localPeerID, this.peerConfig);
 
     // Emitted when a new data connection is established from a remote peer.
     localPeer.on('connection', (conn: Peer.DataConnection) => {
@@ -75,13 +75,13 @@ class SMPPeer {
     await new Promise((resolve, reject) => {
       // Emitted when a connection to the PeerServer is established.
       localPeer.on('open', (id: string) => {
-        // If we expect our PeerID to be `expectedID` but the peer server returns another one,
+        // If we expect our PeerID to be `localPeerID` but the peer server returns another one,
         // we should be aware that something is wrong between us and the server.
-        if (expectedID !== undefined && id !== expectedID) {
+        if (this.localPeerID !== undefined && id !== this.localPeerID) {
           reject(
             new Error(
               'the returned id from the peer server is not the one we expect: ' +
-                `returned=${id}, expected=${expectedID}`,
+                `returned=${id}, expected=${this.localPeerID}`,
             ),
           );
         }

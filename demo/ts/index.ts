@@ -23,8 +23,8 @@ secretElement.onchange = updateSecret;
 
 async function startPeer() {
   // TODO: Reconnect whenever the peer id is changed, and report if connected on the page.
-  localPeer = new SMPPeer(secretElement.value);
-  await localPeer.connectToPeerServer(getLocalPeerID());
+  localPeer = new SMPPeer(secretElement.value, getLocalPeerID());
+  await localPeer.connectToPeerServer();
   localPeerElement.value = localPeer.id;
 }
 
