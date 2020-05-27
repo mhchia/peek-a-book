@@ -4,7 +4,7 @@
 ## What is PeekABook?
 PeekABook is a private order matching system, which allows users to advertise and search for trading orders without leaking the price of the orders.
 
-- Privacy: the privacy of price information is achieved with the [solution][smp_paper] to [Socialist Millionaire Problem][smp_wiki]. More details about the protocol can be found in [`js-smp`][js-smp].
+- Privacy: the privacy of price information is achieved with the [solution][smp_paper] to [Socialist Millionaire Problem][smp_wiki]. More details about the protocol can be found in [`js-smp`][js_smp].
 - Communication: users run SMP(Socialist Millionaire Protocol) with each other through [WebRTC][webrtc]. Users can easily establish peer-to-peer connection without worrying about NAT and other issues. All of the annoying things are handled by WebRTC. Our WebRTC connections are powered by [`PeerJS`][peerjs].
 
 <!-- TODO: Contract -->
