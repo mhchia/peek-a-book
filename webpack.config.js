@@ -1,8 +1,8 @@
 module.exports = {
-    entry: "./src/smpPeer.ts",
+    entry: "./src/ts/index.ts",
     output: {
         path: __dirname,
-        filename: "./dist/smpPeer.js"
+        filename: "./build/js/index.js"
     },
     resolve: {
         extensions: [".tsx", ".ts", ".js", ".json"]
