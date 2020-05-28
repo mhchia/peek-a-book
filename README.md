@@ -4,8 +4,8 @@
 ## What is PeekABook?
 PeekABook is a private order matching system, which allows users to advertise and search for trading orders without leaking the price of the orders.
 
-- Privacy: the privacy of price information is achieved with the [solution][smp_paper] to [Socialist Millionaire Problem][smp_wiki]. More details about the protocol can be found in [`js-smp`][js_smp].
-- Communication: users run SMP(Socialist Millionaire Protocol) with each other through [WebRTC][webrtc]. Users can easily establish peer-to-peer connection without worrying about NAT and other issues. All of the annoying things are handled by WebRTC. Our WebRTC connections are powered by [`PeerJS`][peerjs].
+- Privacy: the privacy of price information is achieved with the [solution][smp_paper] to the [Socialist Millionaire Problem][smp_wiki]. More details about the protocol can be found in [`js-smp`][js_smp].
+- Communication: users run SMP(Socialist Millionaire Protocol) with each others through [WebRTC][webrtc]. They can easily establish peer-to-peer connection without worrying about NAT and other issues. All of the annoying things are handled by WebRTC. Our WebRTC connections are powered by [`PeerJS`][peerjs].
 
 <!-- TODO: Contract -->
 
@@ -46,9 +46,9 @@ main();
 ```
 
 ### Peer server
-A Peer server is in charge of making peers capable of discovering each others and exchanging necessary data used to establish WebRTC connections. We can even disconnect from the peer server after a connection is successfully established. We use the [`PeerServer`][peerjs_server] supported by [`PeerJS`][peerjs]. Check out [`PeerServer`][peerjs_server] for more information.
+A Peer server makes the peers capable of discovering each others and exchanging necessary data used to establish WebRTC connections. We can even disconnect from the peer server after a connection is successfully established. We use the [`PeerServer`][peerjs_server] supported by [`PeerJS`][peerjs]. Check out [`PeerServer`][peerjs_server] for more information.
 
-By default, `SMPPeer` connects to the one specified in `defaultPeerConfig` in `src/config.ts`. You can connect to other peer servers by specifying a config when initializing `SMPPeer`.
+By default, `SMPPeer` connects to the server specified in `defaultPeerConfig` in `src/config.ts`. You can connect to other peer servers by specifying a config when initializing `SMPPeer`.
 
 ```typescript
 const customConfig = {
