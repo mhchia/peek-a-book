@@ -1,4 +1,4 @@
-import SMPPeer from '../../src/smpPeer';
+import SMPPeer from 'js-smp-peer';
 
 const localPeerParamName = 'localPeer';
 const localPeerDOMID = localPeerParamName;
