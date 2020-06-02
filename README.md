@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://github.com/actions/checkout"><img alt="GitHub Actions status" src="https://github.com/mhchia/peek-a-book/workflows/test/badge.svg"></a>
+  <a href="https://github.com/mhchia/peek-a-book/actions?workflow=test"><img alt="GitHub Actions status" src="https://github.com/mhchia/peek-a-book/workflows/test/badge.svg"></a>
 </p>
 
 # peek-a-book
