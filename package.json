@@ -35,6 +35,6 @@
     "webpack-cli": "^3.3.11"
   },
   "dependencies": {
-    "js-smp-peer": "^0.0.3"
+    "js-smp-peer": "^0.0.5"
   }
 }
