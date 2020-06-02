@@ -4,7 +4,7 @@
   "description": "A private order matching system. https://ethresear.ch/t/peekabook-private-order-matching/6987",
   "scripts": {
     "test": "tsdx test",
-    "lint": "tsdx lint src test",
+    "lint": "tsdx lint src",
     "build": "mkdir -p build; npx webpack --config webpack.config.js && cp src/index.html build/"
   },
   "prettier": {
