@@ -10,6 +10,10 @@
 
 To trade, users can either post an advertisement or search for existing advertisements on the smart contract. An advertisement consists of `({identity}, {sell or buy}, {pair_name}, {amount})`, which means user `identity` wants to either sell or buy `amount` units of pair `pair_name`. When a user `A` contacts an advertiser `B`, [SMP(Socialist Millionaire Problem) Protocol][smp_wiki] to let both `A` and `B` know whether they desire the same price. Thanks to the protocol, A and B will only know whether `priceA == priceB` is true or not. They won't learn any more than this fact. [`js-smp-peer`][js_smp_peer] is used to handle and initiate SMP protocol.
 
+## Demo
+
+https://mhchia.github.io/peek-a-book/
+
 <!-- TODO: More information about the contract and the tutorial to use the demo page. -->
 
 [peek_a_book]: https://ethresear.ch/t/peekabook-private-order-matching/6987
