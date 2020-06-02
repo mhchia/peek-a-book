@@ -11,11 +11,21 @@ const connectButtonDOMID = 'connectButton';
 
 let localPeer: SMPPeer;
 
-const localPeerElement = setTextareaValueWithParam(localPeerDOMID, localPeerParamName);
-const remotePeerElement = setTextareaValueWithParam(remotePeerDOMID, remotePeerParamName);
+const localPeerElement = setTextareaValueWithParam(
+  localPeerDOMID,
+  localPeerParamName
+);
+const remotePeerElement = setTextareaValueWithParam(
+  remotePeerDOMID,
+  remotePeerParamName
+);
 const secretElement = setTextareaValueWithParam(secretDOMID, secretParamName);
-const startButton = document.querySelector(`button#${startButtonDOMID}`) as HTMLButtonElement;
-const connectButton = document.querySelector(`button#${connectButtonDOMID}`) as HTMLButtonElement;
+const startButton = document.querySelector(
+  `button#${startButtonDOMID}`
+) as HTMLButtonElement;
+const connectButton = document.querySelector(
+  `button#${connectButtonDOMID}`
+) as HTMLButtonElement;
 
 startButton.onclick = startPeer;
 connectButton.onclick = runSMP;
@@ -60,15 +70,21 @@ function getRemotePeerID(): string {
 }
 
 function getGETParam(q: string): string {
-  const t = (window.location.search.match(new RegExp(`[?&]${q}=([^&]+)`)) || [, null])[1];
-  if (t === null || t === undefined) {
+  const res = window.location.search.match(new RegExp(`[?&]${q}=([^&]+)`));
+  if (res === null) {
     return '';
+  } else {
+    return res[1];
   }
-  return t;
 }
 
-function setTextareaValueWithParam(id: string, paramName: string): HTMLTextAreaElement {
-  const element = document.querySelector(`textarea#${id}`) as HTMLTextAreaElement;
+function setTextareaValueWithParam(
+  id: string,
+  paramName: string
+): HTMLTextAreaElement {
+  const element = document.querySelector(
+    `textarea#${id}`
+  ) as HTMLTextAreaElement;
   if (element === null) {
     throw new Error(`couldn't get element ${id}`);
   }
