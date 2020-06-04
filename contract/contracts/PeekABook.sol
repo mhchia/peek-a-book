@@ -2,19 +2,21 @@ pragma solidity >=0.4.21 <0.7.0;
 
 contract PeekABook {
     struct Advertisement {
-        string pair;  // BTCUSDT, ETHUSDT, ...
+        string pair;  // `BTCUSDT`, `ETHUSDT`, ...
         bool buyOrSell;  // true=buy, false=sell.
-        address owner;  // caller of `advertise`.
+        address owner;  // Advertisement maker
         uint amount;
+        string peerID;  // Identity string
         bool isValid;  // Whether this advertisement is still valid or not.
     }
     uint public maxID;
     mapping (uint => Advertisement) public advertisements;
 
-    function advertise(string memory pair, bool buyOrSell, uint amount) public returns(uint) {
+
+    function advertise(string memory pair, bool buyOrSell, uint amount, string memory peerID) public returns(uint) {
         // TODO: Emit events?
         uint adID = maxID;
-        advertisements[adID] = Advertisement(pair, buyOrSell, msg.sender, amount, true);
+        advertisements[adID] = Advertisement(pair, buyOrSell, msg.sender, amount, peerID, true);
         maxID += 1;
         return adID;
     }
