@@ -39,7 +39,6 @@ contract('PeekABook', (accounts) => {
     assert.equal(ad1.owner, accounts[1], '`advertisement.owner` is wrong');
     // 0th advertisement is unchanged.
     const ad0Again = await peekABookInstance.advertisements.call(0);
-    console.log(ad0Again);
     assert.equal(ad0.pair, ad0Again.pair, '`advertisement.pair` is wrong');
     assert.equal(ad0.buyOrSell, ad0Again.buyOrSell, '`advertisement.buyOrSell` is wrong');
     assert.equal(ad0.amount.toNumber(), ad0Again.amount.toNumber(), '`advertisement.amount` is wrong');
