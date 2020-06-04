@@ -5,7 +5,8 @@
   "scripts": {
     "test": "tsdx test",
     "lint": "tsdx lint src",
-    "build": "mkdir -p build; npx webpack --config webpack.config.js && cp src/index.html build/"
+    "build": "mkdir -p build; npx webpack --config webpack.config.js && cp src/index.html build/",
+    "test-contract": "cd contract; ganache-cli & ganache_pid=$!; sleep 2; truffle test; test_res_code=$?; kill $ganache_pid; exit $test_res_code;"
   },
   "prettier": {
     "printWidth": 80,
