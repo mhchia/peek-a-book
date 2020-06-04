@@ -12,6 +12,7 @@ contract PeekABook {
     mapping (uint => Advertisement) public advertisements;
 
     function advertise(string memory pair, bool buyOrSell, uint amount) public returns(uint) {
+        // TODO: Emit events?
         uint adID = maxID;
         advertisements[adID] = Advertisement(pair, buyOrSell, msg.sender, amount, true);
         maxID += 1;
@@ -19,6 +20,7 @@ contract PeekABook {
     }
 
     function invalidate(uint adID) public {
+        // TODO: Emit events?
         require(adID < maxID, "advertisement not found");
         Advertisement storage ad = advertisements[adID];
         require(ad.owner == msg.sender, "advertisement can only be invalidated by the owner");
