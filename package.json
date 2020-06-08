@@ -3,9 +3,9 @@
   "version": "0.0.1",
   "description": "A private order matching system. https://ethresear.ch/t/peekabook-private-order-matching/6987",
   "scripts": {
-    "test": "tsdx test",
-    "lint": "tsdx lint src",
-    "build": "mkdir -p build; npx webpack --config webpack.config.js && cp src/index.html build/"
+    "lint": "tsdx lint src test",
+    "build": "mkdir -p build; npx webpack --config webpack.config.js && cp src/index.html build/",
+    "test": "truffle compile; ganache-cli & ganache_pid=$!; sleep 2; tsdx test test/; kill $ganache_pid;"
   },
   "prettier": {
     "printWidth": 80,
@@ -25,16 +25,19 @@
   "homepage": "https://github.com/mhchia/peek-a-book#readme",
   "devDependencies": {
     "@types/jest": "^25.2.3",
+    "ganache-cli": "^6.9.1",
     "husky": "^4.2.5",
+    "prettier": "^2.0.5",
+    "truffle": "^5.1.28",
     "ts-loader": "^7.0.4",
     "tsdx": "^0.13.2",
     "tslib": "^2.0.0",
     "typescript": "^3.9.2",
-    "prettier": "^2.0.5",
     "webpack": "^4.43.0",
     "webpack-cli": "^3.3.11"
   },
   "dependencies": {
+    "ethers": "^4.0.47",
     "js-smp-peer": "^0.0.5"
   }
 }
