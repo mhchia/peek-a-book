@@ -10,15 +10,18 @@ import 'bootstrap-table';
 import { contractAtBlock, contractAddress } from './config';
 import { AdvertiseLog, PeekABookContract } from './peekABookContract';
 
-
 const validADsDOMID = 'tableValidADs';
 
 const tableValidADs = $(`#${validADsDOMID}`);
 
 const tableListeningPeerIDs = $('#tableListeningPeerIDs');
 const buttonAddPeerID = $('#buttonAddPeerID');
-const inputListeningPeerIDsPeerID = document.querySelector('input#inputListeningPeerIDsPeerID') as HTMLInputElement;
-const inputListeningPeerIDsPrice = document.querySelector('input#inputListeningPeerIDsPrice') as HTMLInputElement;
+const inputListeningPeerIDsPeerID = document.querySelector(
+  'input#inputListeningPeerIDsPeerID'
+) as HTMLInputElement;
+const inputListeningPeerIDsPrice = document.querySelector(
+  'input#inputListeningPeerIDsPrice'
+) as HTMLInputElement;
 
 const mapListeningPeers = new Map<string, SMPPeer>();
 
@@ -41,17 +44,19 @@ async function initContract() {
 }
 
 function fillValidADsTable(logs: AdvertiseLog[]) {
-  const data = logs.map(obj => {
-    return {
-      adID: obj.adID.toNumber(),
-      pair: obj.pair,
-      buyOrSell: obj.buyOrSell ? 'Buy' : 'Sell',
-      amount: obj.amount.toNumber(),
-      peerID: obj.peerID,
-      samePrice: ''
-    };
-  }).reverse();
-  tableValidADs.bootstrapTable("load", data);
+  const data = logs
+    .map((obj) => {
+      return {
+        adID: obj.adID.toNumber(),
+        pair: obj.pair,
+        buyOrSell: obj.buyOrSell ? 'Buy' : 'Sell',
+        amount: obj.amount.toNumber(),
+        peerID: obj.peerID,
+        samePrice: '',
+      };
+    })
+    .reverse();
+  tableValidADs.bootstrapTable('load', data);
 }
 
 async function getInfoFromContract() {
@@ -65,7 +70,7 @@ getInfoFromContract();
 /**
  * Register buttons
  */
-$(function() {
+$(function () {
   buttonAddPeerID.click(async () => {
     // TODO: Display if there is any error.
     if (inputListeningPeerIDsPrice.value === '') {
@@ -89,7 +94,7 @@ $(function() {
     const data = {
       peerID: newPeerID,
       price: price,
-    }
+    };
     tableListeningPeerIDs.bootstrapTable('append', [data]);
     // Reset the inputs
     inputListeningPeerIDsPeerID.value = '';
@@ -100,28 +105,32 @@ $(function() {
 /**
  * Data events for `tableListeningPeerIDs`.
  */
-(<any>window).tableListeningPeerIDsOperateFormatter = (_: any, __: any, ___: any) => {
+(window as any).tableListeningPeerIDsOperateFormatter = (
+  _: any,
+  __: any,
+  ___: any
+) => {
   return [
     '<a class="remove" href="javascript:void(0)" title="Remove">',
     '<i class="fa fa-trash"></i>',
-    '</a>'
+    '</a>',
   ].join('');
 };
 
-(<any>window).tableListeningPeerIDsOperateEvents = {
+(window as any).tableListeningPeerIDsOperateEvents = {
   'click .remove': function (e: any, value: any, row: any, index: any) {
     const peerID: string = row.peerID;
     const peerInstance = mapListeningPeers.get(peerID);
     if (peerInstance === undefined) {
       throw new Error(
         `peerID=${peerID} is not found in \`mapListeningPeers\` ` +
-        'but it is in the table. something is wrong.'
+          'but it is in the table. something is wrong.'
       );
     }
     // Remove the entry anyway.
     tableListeningPeerIDs.bootstrapTable('remove', {
       field: 'peerID',
-      values: [peerID]
+      values: [peerID],
     });
     mapListeningPeers.delete(peerID);
     try {
@@ -133,14 +142,17 @@ $(function() {
         throw e;
       }
     }
-  }
+  },
 };
-
 
 /**
  * Data events for `tableValidADs`.
  */
-(<any>window).tableValidADsOperateFormatter = (value: any, row: any, index: any) => {
+(window as any).tableValidADsOperateFormatter = (
+  value: any,
+  row: any,
+  index: any
+) => {
   // return '<a class="run" href="javascript:void(0)" value=\'value\'>Run</a>';
   return `
   <div class="input-group">
@@ -155,9 +167,11 @@ $(function() {
   `;
 };
 
-(<any>window).tableValidADsOperateEvents = {
+(window as any).tableValidADsOperateEvents = {
   'click .btn': async (e: any, value: any, row: any, index: any) => {
-    const priceInput = document.querySelector(`input#adsSMPPrice_${row.adID}`) as HTMLInputElement;
+    const priceInput = document.querySelector(
+      `input#adsSMPPrice_${row.adID}`
+    ) as HTMLInputElement;
     const peerInstance = new SMPPeer(priceInput.value, undefined);
     await peerInstance.connectToPeerServer();
     const result = await peerInstance.runSMP(row.peerID);
@@ -170,7 +184,7 @@ $(function() {
         amount: row.amount,
         peerID: row.peerID,
         samePrice: result,
-      }
-    })
-  }
+      },
+    });
+  },
 };
