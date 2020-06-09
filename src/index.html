@@ -1,15 +1,73 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-	<title>PeekABook Client</title>
-</head>
-<body>
-	<div id="container">
-		<label for="localPeer">Our PeerID: </label><textarea id="localPeer"></textarea><button id="startButton">Start</button><br><br>
-		<label for="secret">Secret: </label><textarea id="secret"></textarea><br><br><br>
-        <label for="remotePeer">Remote PeerID: </label><textarea id="remotePeer"></textarea>
-        <button id="connectButton">Run SMP</button><br><br>
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.16.0/dist/bootstrap-table.min.css">
+
+
+    <title>PeekABook Client</title>
+  </head>
+  <body>
+	<h2 class="text-center">Listening PeerIDs</h2>
+	<div id="listeningPeerIDsToolbar">
+		<div class="input-group">
+			<div class="input-group-prepend">
+				<button id="buttonAddPeerID" class="btn btn-secondary">Add</button>
+			</div>
+			<div class="input-group-prepend">
+			  <span class="input-group-text">Peer ID</span>
+			</div>
+			<input type="text" id="inputListeningPeerIDsPeerID" aria-label="peerID" class="form-control">
+			<div class="input-group-prepend">
+				<span class="input-group-text">Price</span>
+			  </div>
+			<input type="text" id="inputListeningPeerIDsPrice" aria-label="price" class="form-control">
+		</div>
 	</div>
+	<div class="container">
+		<table
+			id="tableListeningPeerIDs"
+			data-toggle="table"
+			data-toolbar="#listeningPeerIDsToolbar">
+			<thead>
+			  <tr>
+				<th data-field="peerID">Peer ID</th>
+				<th data-field="price">Price</th>
+				<th data-field="operate"
+					data-formatter="tableListeningPeerIDsOperateFormatter"
+					data-events="tableListeningPeerIDsOperateEvents">Unlisten</th>
+			  </tr>
+			</thead>
+		</table>
+	</div>
+
+	<h2 class="text-center">Valid advertisements</h2>
+	<div class="container">
+		<table
+			id="tableValidADs"
+			data-toggle="table">
+			<thead>
+			  <tr>
+				<th data-field="adID">Advertisement ID</th>
+				<th data-field="pair">Pair</th>
+				<th data-field="buyOrSell">Buy/Sell</th>
+				<th data-field="amount">Amount</th>
+				<th data-field="peerID">Peer ID</th>
+				<th data-field="operate"
+					data-formatter="tableValidADsOperateFormatter"
+					data-events="tableValidADsOperateEvents">SMP</th>
+				<th data-field="samePrice">Result</th>
+			  </tr>
+			</thead>
+		</table>
+	</div>
+
 	<script src="js/index.js"></script>
-</body>
+  </body>
 </html>

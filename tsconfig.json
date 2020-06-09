@@ -5,7 +5,8 @@
       "declaration": true,
       "outDir": "./build/js",
       "strict": true,
-      "esModuleInterop": true
+      "esModuleInterop": true,
+      "allowSyntheticDefaultImports": true
     },
     "include": ["src/ts"],
     "exclude": ["node_modules", "test"]

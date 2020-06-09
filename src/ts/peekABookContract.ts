@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
 import { BigNumber } from 'ethers/utils';
 
-type AdvertiseLog = {
+export type AdvertiseLog = {
   adID: BigNumber;
   pair: string;
   buyOrSell: boolean;
@@ -9,7 +9,7 @@ type AdvertiseLog = {
   peerID: string;
 };
 
-type InvalidateLog = {
+export type InvalidateLog = {
   adID: BigNumber;
 };
 
