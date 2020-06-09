@@ -1,13 +1,13 @@
 import { ethers } from 'ethers';
 import { BigNumber } from 'ethers/utils';
-declare type AdvertiseLog = {
+export declare type AdvertiseLog = {
     adID: BigNumber;
     pair: string;
     buyOrSell: boolean;
     amount: BigNumber;
     peerID: string;
 };
-declare type InvalidateLog = {
+export declare type InvalidateLog = {
     adID: BigNumber;
 };
 declare type BlockFilter = {
