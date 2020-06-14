@@ -23,13 +23,23 @@ const inputListeningPeerIDsPrice = document.querySelector(
   'input#inputListeningPeerIDsPrice'
 ) as HTMLInputElement;
 
+const metamaskErrorDOMID = 'metamaskError';
+
 const mapListeningPeers = new Map<string, SMPPeer>();
 
-declare const web3: any;
+if ((window as any).ethereum === undefined) {
+  const e = document.querySelector(`div#${metamaskErrorDOMID}`) as HTMLDivElement;
+  e.innerHTML = `
+<div class="alert alert-danger" role="alert">
+  Metamask is required for this page to work.
+</div>`;
+  throw new Error('Metamask is required for this page to work');
+}
+
+const provider = new ethers.providers.Web3Provider((window as any).ethereum);
+const signer0 = provider.getSigner(0);
 
 const contractJSON = require('../../build/contracts/PeekABook.json');
-const provider = new ethers.providers.Web3Provider(web3.currentProvider);
-const signer0 = provider.getSigner(0);
 
 async function initContract() {
   const contract = new ethers.Contract(
