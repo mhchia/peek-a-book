@@ -14,35 +14,23 @@
     <title>PeekABook Client</title>
   </head>
   <body>
-	<div id="metamaskError"></span>
-	<h2 class="text-center">Listening PeerIDs</h2>
-	<div id="listeningPeerIDsToolbar">
-		<div class="input-group">
-			<div class="input-group-prepend">
-				<button id="buttonAddPeerID" class="btn btn-secondary">Add</button>
-			</div>
-			<div class="input-group-prepend">
-			  <span class="input-group-text">Peer ID</span>
-			</div>
-			<input type="text" id="inputListeningPeerIDsPeerID" aria-label="peerID" class="form-control">
-			<div class="input-group-prepend">
-				<span class="input-group-text">Price</span>
-			  </div>
-			<input type="text" id="inputListeningPeerIDsPrice" aria-label="price" class="form-control">
-		</div>
-	</div>
+	<div id="metamaskError"></div>
+
+	<h2 class="text-center">My advertisements</h2>
 	<div class="container">
 		<table
-			id="tableListeningPeerIDs"
-			data-toggle="table"
-			data-toolbar="#listeningPeerIDsToolbar">
+			id="tableMyIDs"
+			data-toggle="table">
 			<thead>
 			  <tr>
+				<th data-field="adID">Advertisement ID</th>
+				<th data-field="pair">Pair</th>
+				<th data-field="buyOrSell">Buy/Sell</th>
+				<th data-field="amount">Amount</th>
 				<th data-field="peerID">Peer ID</th>
-				<th data-field="price">Price</th>
 				<th data-field="operate"
-					data-formatter="tableListeningPeerIDsOperateFormatter"
-					data-events="tableListeningPeerIDsOperateEvents">Unlisten</th>
+					data-formatter="tableMyADsOperateFormatter"
+					data-events="tableMyADsOperateEvents">SMP</th>
 			  </tr>
 			</thead>
 		</table>

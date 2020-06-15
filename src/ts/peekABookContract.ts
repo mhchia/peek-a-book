@@ -133,7 +133,11 @@ export class PeekABookContract {
   ) {
     // NOTE: We iterate both log arrays twice after receiving from the contract.
     //  Porbably it makes sense to refactor.
-    const advertiseLogs = await this.getAdvertiseLogs(pair, buyOrSell, advertiser);
+    const advertiseLogs = await this.getAdvertiseLogs(
+      pair,
+      buyOrSell,
+      advertiser
+    );
     const invalidateLogs = await this.getInvalidateLogs();
     const invalidateMap = new Set<number>(
       invalidateLogs.map((obj) => obj.adID.toNumber())

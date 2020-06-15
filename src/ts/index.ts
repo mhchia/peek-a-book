@@ -2,7 +2,6 @@ import $ from 'jquery';
 
 import { ethers } from 'ethers';
 import SMPPeer from 'js-smp-peer';
-import { ServerUnconnected } from 'js-smp-peer/lib/exceptions';
 
 import 'bootstrap';
 import 'bootstrap-table';
@@ -10,25 +9,17 @@ import 'bootstrap-table';
 import { contractAtBlock, contractAddress } from './config';
 import { AdvertiseLog, PeekABookContract } from './peekABookContract';
 
-const validADsDOMID = 'tableValidADs';
-
-const tableValidADs = $(`#${validADsDOMID}`);
-
-const tableListeningPeerIDs = $('#tableListeningPeerIDs');
-const buttonAddPeerID = $('#buttonAddPeerID');
-const inputListeningPeerIDsPeerID = document.querySelector(
-  'input#inputListeningPeerIDsPeerID'
-) as HTMLInputElement;
-const inputListeningPeerIDsPrice = document.querySelector(
-  'input#inputListeningPeerIDsPrice'
-) as HTMLInputElement;
+const tableMyADs = $('#tableMyIDs');
+const tableValidADs = $('#tableValidADs');
 
 const metamaskErrorDOMID = 'metamaskError';
 
 const mapListeningPeers = new Map<string, SMPPeer>();
 
 if ((window as any).ethereum === undefined) {
-  const e = document.querySelector(`div#${metamaskErrorDOMID}`) as HTMLDivElement;
+  const e = document.querySelector(
+    `div#${metamaskErrorDOMID}`
+  ) as HTMLDivElement;
   e.innerHTML = `
 <div class="alert alert-danger" role="alert">
   Metamask is required for this page to work.
@@ -53,6 +44,21 @@ async function initContract() {
   });
 }
 
+function fillMyADsTable(logs: AdvertiseLog[]) {
+  const data = logs
+    .map((obj) => {
+      return {
+        adID: obj.adID.toNumber(),
+        pair: obj.pair,
+        buyOrSell: obj.buyOrSell ? 'Buy' : 'Sell',
+        amount: obj.amount.toNumber(),
+        peerID: obj.peerID,
+      };
+    })
+    .reverse();
+  tableMyADs.bootstrapTable('load', data);
+}
+
 function fillValidADsTable(logs: AdvertiseLog[]) {
   const data = logs
     .map((obj) => {
@@ -72,85 +78,82 @@ function fillValidADsTable(logs: AdvertiseLog[]) {
 async function getInfoFromContract() {
   const contract = await initContract();
   const validADs = await contract.getValidAdvertisements();
+  const myValidADs = await contract.getValidAdvertisements(
+    null,
+    null,
+    await signer0.getAddress()
+  );
+  fillMyADsTable(myValidADs);
   fillValidADsTable(validADs);
 }
 
 getInfoFromContract();
 
 /**
- * Register buttons
+ * Data events for `tableMyADs`.
  */
-$(function () {
-  buttonAddPeerID.click(async () => {
-    // TODO: Display if there is any error.
-    if (inputListeningPeerIDsPrice.value === '') {
-      throw new Error(`price cannout be empty`);
-    }
-    // `peerID` can be empty, which means we want the server to generate one for us.
-    let peerID: string | undefined = inputListeningPeerIDsPeerID.value;
-    if (peerID === '') {
-      peerID = undefined;
-    }
-    if (peerID !== undefined && mapListeningPeers.has(peerID)) {
-      throw new Error(`\`peerID\` already added: peerID=${peerID}`);
-    }
 
-    const price = inputListeningPeerIDsPrice.value;
-    const peerInstance = new SMPPeer(price, peerID);
-    await peerInstance.connectToPeerServer();
-    // Finished connecting to the peer server. Now, we can safely add the peer in the map.
-    const newPeerID = peerInstance.id;
-    mapListeningPeers.set(newPeerID, peerInstance);
-    const data = {
-      peerID: newPeerID,
-      price: price,
-    };
-    tableListeningPeerIDs.bootstrapTable('append', [data]);
-    // Reset the inputs
-    inputListeningPeerIDsPeerID.value = '';
-    inputListeningPeerIDsPrice.value = '';
-  });
-});
-
-/**
- * Data events for `tableListeningPeerIDs`.
- */
-(window as any).tableListeningPeerIDsOperateFormatter = (
-  _: any,
-  __: any,
-  ___: any
+(window as any).tableMyADsOperateFormatter = (
+  value: any,
+  row: any,
+  index: any
 ) => {
-  return [
-    '<a class="remove" href="javascript:void(0)" title="Remove">',
-    '<i class="fa fa-trash"></i>',
-    '</a>',
-  ].join('');
+  return `
+  <div class="input-group">
+    <div class="input-group-prepend">
+      <span class="input-group-text">Price</span>
+    </div>
+    <input type="text" id="myADsSMPListenPrice_${row.adID}" aria-label="price" class="form-control" place>
+    <div class="input-group-append">
+      <button class="btn btn-secondary" id="myADsSMPListenButton_${row.adID}">Listen</button>
+    </div>
+  </div>
+  `;
 };
 
-(window as any).tableListeningPeerIDsOperateEvents = {
-  'click .remove': function (e: any, value: any, row: any, index: any) {
-    const peerID: string = row.peerID;
-    const peerInstance = mapListeningPeers.get(peerID);
-    if (peerInstance === undefined) {
-      throw new Error(
-        `peerID=${peerID} is not found in \`mapListeningPeers\` ` +
-          'but it is in the table. something is wrong.'
-      );
-    }
-    // Remove the entry anyway.
-    tableListeningPeerIDs.bootstrapTable('remove', {
-      field: 'peerID',
-      values: [peerID],
-    });
-    mapListeningPeers.delete(peerID);
-    try {
-      peerInstance.disconnect();
-    } catch (e) {
-      if (e instanceof ServerUnconnected) {
-        // Ignore it.
-      } else {
+const buttonListen = 'Listen';
+const buttonUnlisten = 'Unlisten';
+
+(window as any).tableMyADsOperateEvents = {
+  'click .btn': async (e: any, value: any, row: any, index: any) => {
+    const priceInput = document.querySelector(
+      `input#myADsSMPListenPrice_${row.adID}`
+    ) as HTMLInputElement;
+    const button = document.querySelector(
+      `button#myADsSMPListenButton_${row.adID}`
+    ) as HTMLButtonElement;
+    const peerID = row.peerID;
+    if (button.innerHTML === buttonListen) {
+      if (mapListeningPeers.has(peerID)) {
+        throw new Error(`peer ID is already listened: peerID=${peerID}`);
+      }
+      priceInput.disabled = true;
+      button.disabled = true;
+
+      const peerInstance = new SMPPeer(priceInput.value, peerID);
+      try {
+        await peerInstance.connectToPeerServer();
+      } catch (e) {
+        priceInput.disabled = false;
+        button.disabled = false;
         throw e;
       }
+      // Finished connecting to the peer server. Now, we can safely add the peer in the map.
+      const newPeerID = peerInstance.id;
+      mapListeningPeers.set(newPeerID, peerInstance);
+      button.disabled = false;
+      button.innerHTML = buttonUnlisten;
+    } else if (button.innerHTML === buttonUnlisten) {
+      const peerInstance = mapListeningPeers.get(peerID);
+      mapListeningPeers.delete(peerID);
+      if (peerInstance !== undefined) {
+        peerInstance.disconnect();
+      }
+      priceInput.disabled = false;
+      button.innerHTML = buttonListen;
+    } else {
+      // Sanity check
+      throw new Error(`unrecognized button innerHTML: ${button.innerHTML}`);
     }
   },
 };
@@ -163,7 +166,6 @@ $(function () {
   row: any,
   index: any
 ) => {
-  // return '<a class="run" href="javascript:void(0)" value=\'value\'>Run</a>';
   return `
   <div class="input-group">
     <div class="input-group-prepend">
