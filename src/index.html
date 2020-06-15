@@ -17,10 +17,37 @@
 	<div id="metamaskError"></div>
 
 	<h2 class="text-center">My advertisements</h2>
+	<div id="myADsToolbar">
+		<div class="input-group">
+			<div class="input-group-prepend">
+				<button id="buttonNewAD" class="btn btn-secondary">New</button>
+			</div>
+			<div class="input-group-prepend">
+			 	<span class="input-group-text">Pair</span>
+			</div>
+			<input type="text" id="inputADPair" aria-label="pair" class="form-control">
+			<div class="input-group-prepend">
+				<span class="input-group-text">Amount</span>
+			</div>
+			<input type="text" id="inputADAmount" aria-label="amount" class="form-control">
+			<div class="input-group-prepend">
+				<span class="input-group-text">Buy/Sell</span>
+			</div>
+			<select class="custom-select" id="inputADBuyOrSell" aria-label="buyOrSell">
+				<option value="true">Buy</option>
+				<option value="false">Sell</option>
+			</select>
+			<div class="input-group-prepend">
+			 	<span class="input-group-text">Peer ID</span>
+			</div>
+			<input type="text" id="inputADPeerID" aria-label="peerID" class="form-control">
+		</div>
+	</div>
 	<div class="container">
 		<table
 			id="tableMyIDs"
-			data-toggle="table">
+			data-toggle="table"
+			data-toolbar="#myADsToolbar">
 			<thead>
 			  <tr>
 				<th data-field="adID">Advertisement ID</th>

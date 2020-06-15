@@ -1,5 +1,6 @@
 import $ from 'jquery';
 
+import BN from 'bn.js';
 import { ethers } from 'ethers';
 import SMPPeer from 'js-smp-peer';
 
@@ -11,6 +12,22 @@ import { AdvertiseLog, PeekABookContract } from './peekABookContract';
 
 const tableMyADs = $('#tableMyIDs');
 const tableValidADs = $('#tableValidADs');
+
+const buttonNewAD = document.querySelector(
+  'button#buttonNewAD'
+) as HTMLButtonElement;
+const inputADPair = document.querySelector(
+  'input#inputADPair'
+) as HTMLInputElement;
+const inputADAmount = document.querySelector(
+  'input#inputADAmount'
+) as HTMLInputElement;
+const inputADBuyOrSell = document.querySelector(
+  'select#inputADBuyOrSell'
+) as HTMLSelectElement;
+const inputADPeerID = document.querySelector(
+  'input#inputADPeerID'
+) as HTMLInputElement;
 
 const metamaskErrorDOMID = 'metamaskError';
 
@@ -75,7 +92,7 @@ function fillValidADsTable(logs: AdvertiseLog[]) {
   tableValidADs.bootstrapTable('load', data);
 }
 
-async function getInfoFromContract() {
+async function main() {
   const contract = await initContract();
   const validADs = await contract.getValidAdvertisements();
   const myValidADs = await contract.getValidAdvertisements(
@@ -85,9 +102,45 @@ async function getInfoFromContract() {
   );
   fillMyADsTable(myValidADs);
   fillValidADsTable(validADs);
+
+  buttonNewAD.onclick = async () => {
+    const buyOrSell = inputADBuyOrSell.value === 'true';
+    // TODO: Should change `AD.number` to `BN`?
+    const amount = new BN(inputADAmount.value, 10);
+    if (inputADPair.value === '') {
+      // TODO: Notiy in the page
+      throw new Error('Pair should not be empty');
+    }
+    if (inputADAmount.value === '') {
+      // TODO: Notiy in the page
+      throw new Error('Amount should not be empty');
+    }
+    if (inputADPeerID.value === '') {
+      // TODO: Notiy in the page
+      throw new Error('Peer ID should not be empty');
+    }
+    try {
+      await contract.advertise({
+        pair: inputADPair.value,
+        buyOrSell: buyOrSell,
+        amount: amount.toNumber(),
+        peerID: inputADPeerID.value,
+      });
+      inputADPair.value = '';
+      inputADBuyOrSell.value = '';
+      inputADAmount.value = '';
+      inputADPeerID.value = '';
+    } catch (e) {
+      // TODO: Notiy in the page
+      throw e;
+    }
+    // TODO:
+    //  Refresh table MyADs in a few seconds?
+    //  Probably do it with ws.
+  };
 }
 
-getInfoFromContract();
+main();
 
 /**
  * Data events for `tableMyADs`.
