@@ -27,8 +27,8 @@ export declare class PeekABookContract {
     constructor(provider: ethers.providers.BaseProvider, contractInstance: ethers.Contract, blockFilter?: BlockFilter | undefined);
     advertise(ad: AD): Promise<any>;
     invalidate(adID: number): Promise<any>;
-    getAdvertiseLogs(pair?: string | null, buyOrSell?: boolean | null, peerID?: string | null): Promise<AdvertiseLog[]>;
+    getAdvertiseLogs(pair?: string | null, buyOrSell?: boolean | null, advertiser?: string | null): Promise<AdvertiseLog[]>;
     getInvalidateLogs(): Promise<InvalidateLog[]>;
-    getValidAdvertisements(): Promise<AdvertiseLog[]>;
+    getValidAdvertisements(pair?: string | null, buyOrSell?: boolean | null, advertiser?: string | null): Promise<AdvertiseLog[]>;
 }
 export {};

@@ -14,34 +14,53 @@
     <title>PeekABook Client</title>
   </head>
   <body>
-	<h2 class="text-center">Listening PeerIDs</h2>
-	<div id="listeningPeerIDsToolbar">
+	<div id="topBar"></div>
+
+	<h2 class="text-center">My advertisements</h2>
+	<div id="myADsToolbar">
 		<div class="input-group">
 			<div class="input-group-prepend">
-				<button id="buttonAddPeerID" class="btn btn-secondary">Add</button>
+				<button id="buttonNewAD" class="btn btn-secondary">New</button>
 			</div>
 			<div class="input-group-prepend">
-			  <span class="input-group-text">Peer ID</span>
+			 	<span class="input-group-text">Pair</span>
 			</div>
-			<input type="text" id="inputListeningPeerIDsPeerID" aria-label="peerID" class="form-control">
+			<input type="text" id="inputADPair" aria-label="pair" class="form-control">
 			<div class="input-group-prepend">
-				<span class="input-group-text">Price</span>
-			  </div>
-			<input type="text" id="inputListeningPeerIDsPrice" aria-label="price" class="form-control">
+				<span class="input-group-text">Buy/Sell</span>
+			</div>
+			<select class="custom-select" id="inputADBuyOrSell" aria-label="buyOrSell">
+				<option value="buy">Buy</option>
+				<option value="sell">Sell</option>
+			</select>
+			<div class="input-group-prepend">
+				<span class="input-group-text">Amount</span>
+			</div>
+			<input type="text" id="inputADAmount" aria-label="amount" class="form-control">
+			<div class="input-group-prepend">
+			 	<span class="input-group-text">Peer ID</span>
+			</div>
+			<input type="text" id="inputADPeerID" aria-label="peerID" class="form-control">
 		</div>
 	</div>
 	<div class="container">
 		<table
-			id="tableListeningPeerIDs"
+			id="tableMyIDs"
 			data-toggle="table"
-			data-toolbar="#listeningPeerIDsToolbar">
+			data-toolbar="#myADsToolbar">
 			<thead>
 			  <tr>
+				<th data-field="adID">Advertisement ID</th>
+				<th data-field="pair">Pair</th>
+				<th data-field="buyOrSell">Buy/Sell</th>
+				<th data-field="amount">Amount</th>
 				<th data-field="peerID">Peer ID</th>
-				<th data-field="price">Price</th>
-				<th data-field="operate"
-					data-formatter="tableListeningPeerIDsOperateFormatter"
-					data-events="tableListeningPeerIDsOperateEvents">Unlisten</th>
+				<th data-field="smp"
+					data-formatter="tableMyADsOperateFormatter"
+					data-events="tableMyADsOperateEvents">SMP</th>
+				<th data-field="delete"
+					data-formatter="tableMyADsDeleteOperateFormatter"
+					data-events="tableMyADsDeleteOperateEvents">Delete</th>
 			  </tr>
 			</thead>
 		</table>
@@ -59,10 +78,29 @@
 				<th data-field="buyOrSell">Buy/Sell</th>
 				<th data-field="amount">Amount</th>
 				<th data-field="peerID">Peer ID</th>
-				<th data-field="operate"
+				<th data-field="smp"
 					data-formatter="tableValidADsOperateFormatter"
 					data-events="tableValidADsOperateEvents">SMP</th>
 				<th data-field="samePrice">Result</th>
+			  </tr>
+			</thead>
+		</table>
+	</div>
+
+	<h2 class="text-center">SMP History</h2>
+	<div class="container">
+		<table
+			id="tableSMPHistory"
+			data-toggle="table">
+			<thead>
+			  <tr>
+				<th data-field="direction">Direction</th>
+				<th data-field="localPeerID">Local Peer ID</th>
+				<th data-field="remotePeerID">Remote Peer ID</th>
+				<th data-field="adID">Advertisement ID</th>
+				<th data-field="price">Price</th>
+				<th data-field="result">Result</th>
+				<th data-field="timestamp">Timestamp</th>
 			  </tr>
 			</thead>
 		</table>

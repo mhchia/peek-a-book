@@ -1,2 +1,2 @@
-export declare const contractAtBlock = 8051532;
-export declare const contractAddress = "0xC893578F5D3293bDaff8411b59aCfe72b9BE9678";
+export declare const contractAtBlock = 8090511;
+export declare const contractAddress = "0x74EF33Eb7aa3fF607E18aa240dD7176574c62d23";
