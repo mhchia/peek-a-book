@@ -41,30 +41,13 @@ if ((window as any).ethereum === undefined) {
   throw new Error('Metamask is required');
 }
 
-const provider = new ethers.providers.Web3Provider((window as any).ethereum);
-const signer0 = provider.getSigner(0);
-
 const contractJSON = require('../../build/contracts/PeekABook.json');
 
 let contract: PeekABookContract;
+const ethereum = (window as any).ethereum;
 
-async function initContract() {
-  const contract = new ethers.Contract(
-    contractAddress,
-    contractJSON.abi,
-    signer0
-  );
-  return new PeekABookContract(provider, contract, {
-    fromBlock: contractAtBlock,
-  });
-}
-
-async function fillMyADsTable(contract: PeekABookContract) {
-  const myValidADs = await contract.getValidAdvertisements(
-    null,
-    null,
-    await signer0.getAddress()
-  );
+async function fillMyADsTable(contract: PeekABookContract, myAddr: string) {
+  const myValidADs = await contract.getValidAdvertisements(null, null, myAddr);
   const data = myValidADs
     .map((obj) => {
       return {
@@ -97,8 +80,18 @@ async function fillValidADsTable(contract: PeekABookContract) {
 }
 
 async function main() {
-  contract = await initContract();
-  await fillMyADsTable(contract);
+  await ethereum.enable();
+  const provider = new ethers.providers.Web3Provider(ethereum);
+  const signer0 = provider.getSigner(0);
+  const contractInstance = new ethers.Contract(
+    contractAddress,
+    contractJSON.abi,
+    signer0
+  );
+  contract = new PeekABookContract(provider, contractInstance, {
+    fromBlock: contractAtBlock,
+  });
+  await fillMyADsTable(contract, await signer0.getAddress());
   await fillValidADsTable(contract);
   tableSMPHistory.bootstrapTable({});
 }
