@@ -128,15 +128,15 @@ buttonNewAD.onclick = async () => {
   // TODO: Should change `AD.number` to `BN`?
   const amount = new BN(inputADAmount.value, 10);
   if (inputADPair.value === '') {
-    // TODO: Notiy in the page
+    // TODO: Notify in the page
     throw new Error('pair should not be empty');
   }
   if (inputADAmount.value === '') {
-    // TODO: Notiy in the page
+    // TODO: Notify in the page
     throw new Error('amount should not be empty');
   }
   if (inputADPeerID.value === '') {
-    // TODO: Notiy in the page
+    // TODO: Notify in the page
     throw new Error('peer ID should not be empty');
   }
   try {
@@ -151,7 +151,7 @@ buttonNewAD.onclick = async () => {
     inputADAmount.value = '';
     inputADPeerID.value = '';
   } catch (e) {
-    // TODO: Notiy in the page
+    // TODO: Notify in the page
     throw e;
   }
   // TODO:
@@ -201,6 +201,7 @@ const buttonUnlisten = 'Unlisten';
       button.disabled = true;
 
       const peerInstance = new SMPPeer(priceInput.value, peerID);
+      // TODO: Register callback for table `SMPHistory`.
       try {
         await peerInstance.connectToPeerServer();
       } catch (e) {
