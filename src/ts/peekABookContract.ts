@@ -1,6 +1,8 @@
 import { ethers } from 'ethers';
 import { BigNumber } from 'ethers/utils';
 
+const defaultGasPrice = 100 * 10 ** 9; // 100 GWei
+
 export type AdvertiseLog = {
   adID: BigNumber;
   pair: string;
@@ -50,12 +52,15 @@ export class PeekABookContract {
       ad.pair,
       ad.buyOrSell,
       ad.amount,
-      ad.peerID
+      ad.peerID,
+      { gasPrice: defaultGasPrice }
     );
   }
 
   async invalidate(adID: number) {
-    return await this.contractInstance.invalidate(adID);
+    return await this.contractInstance.invalidate(adID, {
+      gasPrice: defaultGasPrice,
+    });
   }
 
   // uint adID, string indexed pairIndex, string pair, bool indexed buyOrSell, uint amount, string peerID
@@ -64,7 +69,7 @@ export class PeekABookContract {
     buyOrSell: boolean | null = null,
     advertiser: string | null = null
   ) {
-    // FIXME: Encode `boolean` on our own. There should be other better ways to do this.
+    // FIXME: Encode `boolean` in a better way, instead of doing it our own.
     let buyOrSellEncoded: string | null = null;
     if (buyOrSell !== null) {
       if (buyOrSell) {

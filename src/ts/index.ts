@@ -8,10 +8,11 @@ import 'bootstrap';
 import 'bootstrap-table';
 
 import { contractAtBlock, contractAddress } from './config';
-import { AdvertiseLog, PeekABookContract } from './peekABookContract';
+import { PeekABookContract } from './peekABookContract';
 
 const tableMyADs = $('#tableMyIDs');
 const tableValidADs = $('#tableValidADs');
+const tableSMPHistory = $('#tableSMPHistory');
 
 const buttonNewAD = document.querySelector(
   'button#buttonNewAD'
@@ -28,20 +29,16 @@ const inputADBuyOrSell = document.querySelector(
 const inputADPeerID = document.querySelector(
   'input#inputADPeerID'
 ) as HTMLInputElement;
-
-const metamaskErrorDOMID = 'metamaskError';
+const topBar = document.querySelector('div#topBar') as HTMLDivElement;
 
 const mapListeningPeers = new Map<string, SMPPeer>();
 
 if ((window as any).ethereum === undefined) {
-  const e = document.querySelector(
-    `div#${metamaskErrorDOMID}`
-  ) as HTMLDivElement;
-  e.innerHTML = `
+  topBar.innerHTML = `
 <div class="alert alert-danger" role="alert">
-  Metamask is required for this page to work.
+  Metamask is required.
 </div>`;
-  throw new Error('Metamask is required for this page to work');
+  throw new Error('Metamask is required');
 }
 
 const provider = new ethers.providers.Web3Provider((window as any).ethereum);
@@ -49,20 +46,26 @@ const signer0 = provider.getSigner(0);
 
 const contractJSON = require('../../build/contracts/PeekABook.json');
 
+let contract: PeekABookContract;
+
 async function initContract() {
   const contract = new ethers.Contract(
     contractAddress,
     contractJSON.abi,
     signer0
   );
-  await contract.deployed();
   return new PeekABookContract(provider, contract, {
     fromBlock: contractAtBlock,
   });
 }
 
-function fillMyADsTable(logs: AdvertiseLog[]) {
-  const data = logs
+async function fillMyADsTable(contract: PeekABookContract) {
+  const myValidADs = await contract.getValidAdvertisements(
+    null,
+    null,
+    await signer0.getAddress()
+  );
+  const data = myValidADs
     .map((obj) => {
       return {
         adID: obj.adID.toNumber(),
@@ -76,8 +79,9 @@ function fillMyADsTable(logs: AdvertiseLog[]) {
   tableMyADs.bootstrapTable('load', data);
 }
 
-function fillValidADsTable(logs: AdvertiseLog[]) {
-  const data = logs
+async function fillValidADsTable(contract: PeekABookContract) {
+  const validADs = await contract.getValidAdvertisements();
+  const data = validADs
     .map((obj) => {
       return {
         adID: obj.adID.toNumber(),
@@ -93,54 +97,67 @@ function fillValidADsTable(logs: AdvertiseLog[]) {
 }
 
 async function main() {
-  const contract = await initContract();
-  const validADs = await contract.getValidAdvertisements();
-  const myValidADs = await contract.getValidAdvertisements(
-    null,
-    null,
-    await signer0.getAddress()
-  );
-  fillMyADsTable(myValidADs);
-  fillValidADsTable(validADs);
-
-  buttonNewAD.onclick = async () => {
-    const buyOrSell = inputADBuyOrSell.value === 'true';
-    // TODO: Should change `AD.number` to `BN`?
-    const amount = new BN(inputADAmount.value, 10);
-    if (inputADPair.value === '') {
-      // TODO: Notiy in the page
-      throw new Error('Pair should not be empty');
-    }
-    if (inputADAmount.value === '') {
-      // TODO: Notiy in the page
-      throw new Error('Amount should not be empty');
-    }
-    if (inputADPeerID.value === '') {
-      // TODO: Notiy in the page
-      throw new Error('Peer ID should not be empty');
-    }
-    try {
-      await contract.advertise({
-        pair: inputADPair.value,
-        buyOrSell: buyOrSell,
-        amount: amount.toNumber(),
-        peerID: inputADPeerID.value,
-      });
-      inputADPair.value = '';
-      inputADBuyOrSell.value = '';
-      inputADAmount.value = '';
-      inputADPeerID.value = '';
-    } catch (e) {
-      // TODO: Notiy in the page
-      throw e;
-    }
-    // TODO:
-    //  Refresh table MyADs in a few seconds?
-    //  Probably do it with ws.
-  };
+  contract = await initContract();
+  await fillMyADsTable(contract);
+  await fillValidADsTable(contract);
+  tableSMPHistory.bootstrapTable({});
 }
 
-main();
+function addSMPRecord(
+  inOrOut: 'in' | 'out',
+  localPeerID: string,
+  remotePeerID: string,
+  adID: number,
+  price: string,
+  result: boolean
+) {
+  const data = {
+    direction: inOrOut,
+    localPeerID: localPeerID,
+    remotePeerID: remotePeerID,
+    adID: adID,
+    price: price,
+    result: result,
+    timestamp: new Date().toISOString(),
+  };
+  tableSMPHistory.bootstrapTable('append', [data]);
+}
+
+buttonNewAD.onclick = async () => {
+  const buyOrSell = inputADBuyOrSell.value === 'buy';
+  // TODO: Should change `AD.number` to `BN`?
+  const amount = new BN(inputADAmount.value, 10);
+  if (inputADPair.value === '') {
+    // TODO: Notiy in the page
+    throw new Error('pair should not be empty');
+  }
+  if (inputADAmount.value === '') {
+    // TODO: Notiy in the page
+    throw new Error('amount should not be empty');
+  }
+  if (inputADPeerID.value === '') {
+    // TODO: Notiy in the page
+    throw new Error('peer ID should not be empty');
+  }
+  try {
+    await contract.advertise({
+      pair: inputADPair.value,
+      buyOrSell: buyOrSell,
+      amount: amount.toNumber(),
+      peerID: inputADPeerID.value,
+    });
+    inputADPair.value = '';
+    inputADBuyOrSell.value = '';
+    inputADAmount.value = '';
+    inputADPeerID.value = '';
+  } catch (e) {
+    // TODO: Notiy in the page
+    throw e;
+  }
+  // TODO:
+  //  Refresh table MyADs in a few seconds?
+  //  Probably do it with ws.
+};
 
 /**
  * Data events for `tableMyADs`.
@@ -211,6 +228,24 @@ const buttonUnlisten = 'Unlisten';
   },
 };
 
+(window as any).tableMyADsDeleteOperateFormatter = (
+  value: any,
+  row: any,
+  index: any
+) => {
+  return [
+    '<a class="remove" href="javascript:void(0)" title="Remove">',
+    '<i class="fa fa-trash"></i>',
+    '</a>',
+  ].join('');
+};
+
+(window as any).tableMyADsDeleteOperateEvents = {
+  'click .remove': async (e: any, value: any, row: any, index: any) => {
+    await contract.invalidate(row.adID);
+  },
+};
+
 /**
  * Data events for `tableValidADs`.
  */
@@ -240,6 +275,7 @@ const buttonUnlisten = 'Unlisten';
     const peerInstance = new SMPPeer(priceInput.value, undefined);
     await peerInstance.connectToPeerServer();
     const result = await peerInstance.runSMP(row.peerID);
+    // TODO: Add spinning waiting label
     tableValidADs.bootstrapTable('updateRow', {
       index: index,
       row: {
@@ -251,5 +287,15 @@ const buttonUnlisten = 'Unlisten';
         samePrice: result,
       },
     });
+    addSMPRecord(
+      'out',
+      peerInstance.id,
+      row.peerID,
+      row.adID,
+      priceInput.value,
+      result
+    );
   },
 };
+
+main();
