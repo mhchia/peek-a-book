@@ -44,6 +44,6 @@
     "bootstrap-table": "^1.16.0",
     "ethers": "^4.0.47",
     "jquery": "^3.5.1",
-    "js-smp-peer": "0.0.6"
+    "js-smp-peer": "^0.0.7"
   }
 }
