@@ -201,7 +201,7 @@ const buttonUnlisten = 'Unlisten';
           remotePeerID,
           row.adID,
           priceInput.value,
-          result,
+          result
         );
       });
       try {
