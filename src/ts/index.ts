@@ -194,7 +194,16 @@ const buttonUnlisten = 'Unlisten';
       button.disabled = true;
 
       const peerInstance = new SMPPeer(priceInput.value, peerID);
-      // TODO: Register callback for table `SMPHistory`.
+      peerInstance.on('incoming', (remotePeerID: string, result: boolean) => {
+        addSMPRecord(
+          'in',
+          peerID,
+          remotePeerID,
+          row.adID,
+          priceInput.value,
+          result
+        );
+      });
       try {
         await peerInstance.connectToPeerServer();
       } catch (e) {
@@ -266,9 +275,14 @@ const buttonUnlisten = 'Unlisten';
     const priceInput = document.querySelector(
       `input#adsSMPPrice_${row.adID}`
     ) as HTMLInputElement;
+    // Create a temporary `SMPPeer` to run SMP with the remote peer.
     const peerInstance = new SMPPeer(priceInput.value, undefined);
     await peerInstance.connectToPeerServer();
-    const result = await peerInstance.runSMP(row.peerID);
+    const localPeerID = peerInstance.id;
+    const remotePeerID = row.peerID;
+    const result = await peerInstance.runSMP(remotePeerID);
+    // Since we already get the result, close the peer instance.
+    peerInstance.disconnect();
     // TODO: Add spinning waiting label
     tableValidADs.bootstrapTable('updateRow', {
       index: index,
@@ -283,7 +297,7 @@ const buttonUnlisten = 'Unlisten';
     });
     addSMPRecord(
       'out',
-      peerInstance.id,
+      localPeerID,
       row.peerID,
       row.adID,
       priceInput.value,
