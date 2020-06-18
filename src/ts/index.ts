@@ -69,7 +69,6 @@ async function fillValidADsTable(contract: PeekABookContract) {
         buyOrSell: obj.buyOrSell ? 'Buy' : 'Sell',
         amount: obj.amount.toNumber(),
         peerID: obj.peerID,
-        samePrice: '',
       };
     })
     .reverse();
@@ -314,7 +313,6 @@ const buttonUnlisten = 'Unlisten';
         buyOrSell: row.buyOrSell,
         amount: row.amount,
         peerID: row.peerID,
-        samePrice: result,
       },
     });
     addSMPRecord(
