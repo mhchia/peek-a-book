@@ -7,7 +7,7 @@ import SMPPeer from 'js-smp-peer';
 import 'bootstrap';
 import 'bootstrap-table';
 
-import { contractAtBlock, contractAddress } from './config';
+import { networkConfig } from './config';
 import { PeekABookContract } from './peekABookContract';
 
 const tableMyADs = $('#tableMyIDs');
@@ -33,18 +33,15 @@ const topBar = document.querySelector('div#topBar') as HTMLDivElement;
 
 const mapListeningPeers = new Map<string, SMPPeer>();
 
-if ((window as any).ethereum === undefined) {
+function emitToplevelError(errMsg: string) {
   topBar.innerHTML = `
-<div class="alert alert-danger" role="alert">
-  Metamask is required.
-</div>`;
-  throw new Error('Metamask is required');
+  <div class="alert alert-danger" role="alert">
+    ${errMsg}
+  </div>`;
+  throw new Error(errMsg);
 }
 
-const contractJSON = require('../../build/contracts/PeekABook.json');
-
 let contract: PeekABookContract;
-const ethereum = (window as any).ethereum;
 
 async function fillMyADsTable(contract: PeekABookContract, myAddr: string) {
   const myValidADs = await contract.getValidAdvertisements(null, null, myAddr);
@@ -80,16 +77,41 @@ async function fillValidADsTable(contract: PeekABookContract) {
 }
 
 async function main() {
+  if (typeof (window as any).ethereum === undefined) {
+    emitToplevelError('Metamask is required');
+  }
+  const ethereum = (window as any).ethereum;
+  if (!ethereum.isMetaMask) {
+    emitToplevelError('Metamask is required');
+  }
+  ethereum.autoRefreshOnNetworkChange = false;
   await ethereum.enable();
+  ethereum.on('networkChanged', () => {
+    window.location.reload();
+  });
   const provider = new ethers.providers.Web3Provider(ethereum);
+  const networkName = (await provider.getNetwork()).name;
+  const config = networkConfig[networkName];
+  if (config === undefined) {
+    const supportedNetowrks = [];
+    for (const n in networkConfig) {
+      supportedNetowrks.push(n);
+    }
+    const supportedNetworksStr = supportedNetowrks.join(', ');
+    emitToplevelError(
+      `Metamask: network \`${networkName}\` is not supported. ` +
+        `Please switch to the supported networks=[${supportedNetworksStr}]`
+    );
+  }
   const signer0 = provider.getSigner(0);
+  const contractJSON = require('../../build/contracts/PeekABook.json');
   const contractInstance = new ethers.Contract(
-    contractAddress,
+    config.contractAddress,
     contractJSON.abi,
     signer0
   );
   contract = new PeekABookContract(provider, contractInstance, {
-    fromBlock: contractAtBlock,
+    fromBlock: config.contractAtBlock,
   });
   await fillMyADsTable(contract, await signer0.getAddress());
   await fillValidADsTable(contract);
@@ -306,4 +328,8 @@ const buttonUnlisten = 'Unlisten';
   },
 };
 
-main();
+Promise.resolve(main())
+  .then()
+  .catch((e) => {
+    throw e;
+  });
