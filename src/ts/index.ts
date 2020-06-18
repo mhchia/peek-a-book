@@ -11,7 +11,7 @@ import { networkConfig } from './config';
 import { PeekABookContract } from './peekABookContract';
 
 const tableMyADs = $('#tableMyIDs');
-const tableValidADs = $('#tableValidADs');
+const tableAllADs = $('#tableAllADs');
 const tableSMPHistory = $('#tableSMPHistory');
 
 const buttonNewAD = document.querySelector(
@@ -73,7 +73,7 @@ async function fillValidADsTable(contract: PeekABookContract) {
       };
     })
     .reverse();
-  tableValidADs.bootstrapTable('load', data);
+  tableAllADs.bootstrapTable('load', data);
 }
 
 async function main() {
@@ -272,9 +272,9 @@ const buttonUnlisten = 'Unlisten';
 };
 
 /**
- * Data events for `tableValidADs`.
+ * Data events for `tableAllADs`.
  */
-(window as any).tableValidADsOperateFormatter = (
+(window as any).tableAllADsOperateFormatter = (
   value: any,
   row: any,
   index: any
@@ -292,7 +292,7 @@ const buttonUnlisten = 'Unlisten';
   `;
 };
 
-(window as any).tableValidADsOperateEvents = {
+(window as any).tableAllADsOperateEvents = {
   'click .btn': async (e: any, value: any, row: any, index: any) => {
     const priceInput = document.querySelector(
       `input#adsSMPPrice_${row.adID}`
@@ -306,7 +306,7 @@ const buttonUnlisten = 'Unlisten';
     // Since we already get the result, close the peer instance.
     peerInstance.disconnect();
     // TODO: Add spinning waiting label
-    tableValidADs.bootstrapTable('updateRow', {
+    tableAllADs.bootstrapTable('updateRow', {
       index: index,
       row: {
         adID: row.adID,
