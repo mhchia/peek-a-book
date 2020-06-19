@@ -187,7 +187,7 @@ buttonNewAD.onclick = async () => {
     <div class="input-group-prepend">
       <span class="input-group-text">Price</span>
     </div>
-    <input type="text" id="myADsSMPListenPrice_${row.adID}" aria-label="price" class="form-control" place>
+    <input type="number" min="1" id="myADsSMPListenPrice_${row.adID}" aria-label="price" class="form-control" place>
     <div class="input-group-append">
       <button class="btn btn-secondary" id="myADsSMPListenButton_${row.adID}">Listen</button>
     </div>
@@ -283,7 +283,7 @@ const buttonUnlisten = 'Unlisten';
     <div class="input-group-prepend">
       <span class="input-group-text">Price</span>
     </div>
-    <input type="text" id="adsSMPPrice_${row.adID}" aria-label="price" class="form-control" place>
+    <input type="number" min="1" id="adsSMPPrice_${row.adID}" aria-label="price" class="form-control" place>
     <div class="input-group-append">
       <button class="btn btn-secondary" id="buttonRun">Run</button>
     </div>
