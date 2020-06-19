@@ -119,7 +119,7 @@ async function main() {
 }
 
 function addSMPRecord(
-  inOrOut: 'in' | 'out',
+  isInitiator: boolean,
   localPeerID: string,
   remotePeerID: string,
   adID: number,
@@ -127,7 +127,7 @@ function addSMPRecord(
   result: boolean
 ) {
   const data = {
-    direction: inOrOut,
+    initiator: isInitiator ? 'You' : 'Others',
     localPeerID: localPeerID,
     remotePeerID: remotePeerID,
     adID: adID,
@@ -214,7 +214,7 @@ const buttonUnlisten = 'Unlisten';
       const peerInstance = new SMPPeer(priceInput.value, peerID);
       peerInstance.on('incoming', (remotePeerID: string, result: boolean) => {
         addSMPRecord(
-          'in',
+          true,
           peerID,
           remotePeerID,
           row.adID,
@@ -299,18 +299,8 @@ const buttonUnlisten = 'Unlisten';
     // Since we already get the result, close the peer instance.
     peerInstance.disconnect();
     // TODO: Add spinning waiting label
-    tableAllADs.bootstrapTable('updateRow', {
-      index: index,
-      row: {
-        adID: row.adID,
-        pair: row.pair,
-        buyOrSell: row.buyOrSell,
-        amount: row.amount,
-        peerID: row.peerID,
-      },
-    });
     addSMPRecord(
-      'out',
+      false,
       localPeerID,
       row.peerID,
       row.adID,
