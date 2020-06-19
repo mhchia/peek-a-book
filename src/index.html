@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
     <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.16.0/dist/bootstrap-table.min.css">
 
-
     <title>PeekABook Client</title>
   </head>
   <body>
@@ -22,21 +21,12 @@
 			<div class="input-group-prepend">
 				<button id="buttonNewAD" class="btn btn-secondary">New</button>
 			</div>
-			<div class="input-group-prepend">
-			 	<span class="input-group-text">Pair</span>
-			</div>
-			<input type="text" id="inputADPair" aria-label="pair" class="form-control">
-			<div class="input-group-prepend">
-				<span class="input-group-text">Buy/Sell</span>
-			</div>
+			<input type="text" id="inputADPair" placeholder="Pair" aria-label="pair" class="form-control">
 			<select class="custom-select" id="inputADBuyOrSell" aria-label="buyOrSell">
 				<option value="buy">Buy</option>
 				<option value="sell">Sell</option>
 			</select>
-			<div class="input-group-prepend">
-				<span class="input-group-text">Amount</span>
-			</div>
-			<input type="number" min="1" id="inputADAmount" aria-label="amount" class="form-control">
+			<input type="number" min="1" id="inputADAmount" placeholder="Amount" aria-label="amount" class="form-control">
 		</div>
 	</div>
 	<div class="container">
