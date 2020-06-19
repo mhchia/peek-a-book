@@ -37,10 +37,6 @@
 				<span class="input-group-text">Amount</span>
 			</div>
 			<input type="text" id="inputADAmount" aria-label="amount" class="form-control">
-			<div class="input-group-prepend">
-			 	<span class="input-group-text">Peer ID</span>
-			</div>
-			<input type="text" id="inputADPeerID" aria-label="peerID" class="form-control">
 		</div>
 	</div>
 	<div class="container">
@@ -54,7 +50,7 @@
 				<th data-field="pair">Pair</th>
 				<th data-field="buyOrSell">Buy/Sell</th>
 				<th data-field="amount">Amount</th>
-				<th data-field="peerID">Peer ID</th>
+				<th data-field="peerID" data-visible="false">Peer ID</th>
 				<th data-field="smp"
 					data-formatter="tableMyADsOperateFormatter"
 					data-events="tableMyADsOperateEvents">SMP</th>
@@ -77,7 +73,7 @@
 				<th data-field="pair">Pair</th>
 				<th data-field="buyOrSell">Buy/Sell</th>
 				<th data-field="amount">Amount</th>
-				<th data-field="peerID">Peer ID</th>
+				<th data-field="peerID" data-visible="false">Peer ID</th>
 				<th data-field="smp"
 					data-formatter="tableAllADsOperateFormatter"
 					data-events="tableAllADsOperateEvents">SMP</th>
@@ -94,8 +90,8 @@
 			<thead>
 			  <tr>
 				<th data-field="direction">Direction</th>
-				<th data-field="localPeerID">Local Peer ID</th>
-				<th data-field="remotePeerID">Remote Peer ID</th>
+				<th data-field="localPeerID" data-visible="false">Local Peer ID</th>
+				<th data-field="remotePeerID" data-visible="false">Remote Peer ID</th>
 				<th data-field="adID">Advertisement ID</th>
 				<th data-field="price">Price</th>
 				<th data-field="result">Result</th>

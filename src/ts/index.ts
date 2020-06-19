@@ -1,11 +1,12 @@
 import $ from 'jquery';
-
 import BN from 'bn.js';
 import { ethers } from 'ethers';
 import SMPPeer from 'js-smp-peer';
 
 import 'bootstrap';
 import 'bootstrap-table';
+
+import { v4 as uuidv4 } from 'uuid';
 
 import { networkConfig } from './config';
 import { PeekABookContract } from './peekABookContract';
@@ -26,9 +27,6 @@ const inputADAmount = document.querySelector(
 const inputADBuyOrSell = document.querySelector(
   'select#inputADBuyOrSell'
 ) as HTMLSelectElement;
-const inputADPeerID = document.querySelector(
-  'input#inputADPeerID'
-) as HTMLInputElement;
 const topBar = document.querySelector('div#topBar') as HTMLDivElement;
 
 const mapListeningPeers = new Map<string, SMPPeer>();
@@ -140,6 +138,10 @@ function addSMPRecord(
   tableSMPHistory.bootstrapTable('append', [data]);
 }
 
+function getRandomPeerID(): string {
+  return uuidv4();
+}
+
 buttonNewAD.onclick = async () => {
   const buyOrSell = inputADBuyOrSell.value === 'buy';
   // TODO: Should change `AD.number` to `BN`?
@@ -152,21 +154,16 @@ buttonNewAD.onclick = async () => {
     // TODO: Notify in the page
     throw new Error('amount should not be empty');
   }
-  if (inputADPeerID.value === '') {
-    // TODO: Notify in the page
-    throw new Error('peer ID should not be empty');
-  }
   try {
     await contract.advertise({
       pair: inputADPair.value,
       buyOrSell: buyOrSell,
       amount: amount.toNumber(),
-      peerID: inputADPeerID.value,
+      peerID: getRandomPeerID(),
     });
     inputADPair.value = '';
     inputADBuyOrSell.value = '';
     inputADAmount.value = '';
-    inputADPeerID.value = '';
   } catch (e) {
     // TODO: Notify in the page
     throw e;
