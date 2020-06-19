@@ -88,6 +88,9 @@ async function main() {
   ethereum.on('networkChanged', () => {
     window.location.reload();
   });
+  ethereum.on('accountsChanged', () => {
+    window.location.reload();
+  });
   const provider = new ethers.providers.Web3Provider(ethereum);
   const networkName = (await provider.getNetwork()).name;
   const config = networkConfig[networkName];
