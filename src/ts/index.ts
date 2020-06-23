@@ -1,5 +1,4 @@
 import $ from 'jquery';
-
 import BN from 'bn.js';
 import { ethers } from 'ethers';
 import SMPPeer from 'js-smp-peer';
@@ -7,11 +6,21 @@ import SMPPeer from 'js-smp-peer';
 import 'bootstrap';
 import 'bootstrap-table';
 
-import { contractAtBlock, contractAddress } from './config';
+import { v4 as uuidv4 } from 'uuid';
+
+import { networkConfig, peerServerGetPeersURL } from './config';
 import { PeekABookContract } from './peekABookContract';
 
+const pollPeersInterval = 1000;
+const updateOnlinePeriod = 1500;
+
+const imageOnline =
+  '<img src="icons/correct.png" alt="Online" height="32" width="32">';
+const imageOffline =
+  '<img src="icons/criss-cross.png" alt="Online" height="32" width="32">';
+
 const tableMyADs = $('#tableMyIDs');
-const tableValidADs = $('#tableValidADs');
+const tableAllADs = $('#tableAllADs');
 const tableSMPHistory = $('#tableSMPHistory');
 
 const buttonNewAD = document.querySelector(
@@ -26,27 +35,38 @@ const inputADAmount = document.querySelector(
 const inputADBuyOrSell = document.querySelector(
   'select#inputADBuyOrSell'
 ) as HTMLSelectElement;
-const inputADPeerID = document.querySelector(
-  'input#inputADPeerID'
-) as HTMLInputElement;
 const topBar = document.querySelector('div#topBar') as HTMLDivElement;
 
 const mapListeningPeers = new Map<string, SMPPeer>();
 
-if ((window as any).ethereum === undefined) {
+function emitToplevelError(errMsg: string) {
   topBar.innerHTML = `
-<div class="alert alert-danger" role="alert">
-  Metamask is required.
-</div>`;
-  throw new Error('Metamask is required');
+  <div class="alert alert-danger" role="alert">
+    ${errMsg}
+  </div>`;
+  throw new Error(errMsg);
 }
 
-const contractJSON = require('../../build/contracts/PeekABook.json');
+async function getPeers() {
+  const t1 = performance.now();
+  const fetched = await fetch(peerServerGetPeersURL);
+  console.debug(`Spent ${performance.now() - t1} on fetching online peers`);
+  const parsed = await fetched.json();
+  return new Set(parsed as string[]);
+}
+
+let onlinePeers: Set<string>;
+
+async function startPollingOnlinePeers() {
+  onlinePeers = await getPeers();
+  setInterval(async () => {
+    onlinePeers = await getPeers();
+  }, pollPeersInterval);
+}
 
 let contract: PeekABookContract;
-const ethereum = (window as any).ethereum;
 
-async function fillMyADsTable(contract: PeekABookContract, myAddr: string) {
+async function updateMyADsTable(contract: PeekABookContract, myAddr: string) {
   const myValidADs = await contract.getValidAdvertisements(null, null, myAddr);
   const data = myValidADs
     .map((obj) => {
@@ -62,42 +82,112 @@ async function fillMyADsTable(contract: PeekABookContract, myAddr: string) {
   tableMyADs.bootstrapTable('load', data);
 }
 
-async function fillValidADsTable(contract: PeekABookContract) {
+function getPeerOnlineStatusImg(peerID: string): string {
+  if (onlinePeers.has(peerID)) {
+    return imageOnline;
+  } else {
+    return imageOffline;
+  }
+}
+
+let timeoutID: NodeJS.Timeout | undefined;
+
+async function updateValidADsTable(contract: PeekABookContract) {
+  // Remove the previous timer if any because we are setting up a new one later in this function.
+  if (timeoutID !== undefined) {
+    clearInterval(timeoutID);
+  }
+  // Automatically update online/offline after the table is loaded with data
+  // NOTE: `onLoadSuccess`(load-success.bs.table)[https://bootstrap-table.com/docs/api/events/#onloadsuccess]
+  //  is not working somehow. Use `onPostBody` instead.
+  tableAllADs.on('post-body.bs.table', function (event, data) {
+    // NOTE: Removing the listener is necessary because later `updateCell`s trigger this event, and
+    //  therefore the number of `setInterval` increases exponentially.
+    tableAllADs.off('post-body.bs.table');
+    timeoutID = setInterval(() => {
+      const tS = performance.now();
+      for (const index in data) {
+        const ad = data[index];
+        tableAllADs.bootstrapTable('updateCell', {
+          index: index,
+          field: 'online',
+          value: getPeerOnlineStatusImg(ad.peerID),
+        });
+      }
+      console.debug(
+        `Spent ${performance.now() - tS} ms on updating all online status ` +
+          'for table "All Advertisements"'
+      );
+    }, updateOnlinePeriod);
+  });
+
   const validADs = await contract.getValidAdvertisements();
-  const data = validADs
-    .map((obj) => {
-      return {
-        adID: obj.adID.toNumber(),
-        pair: obj.pair,
-        buyOrSell: obj.buyOrSell ? 'Buy' : 'Sell',
-        amount: obj.amount.toNumber(),
-        peerID: obj.peerID,
-        samePrice: '',
-      };
-    })
-    .reverse();
-  tableValidADs.bootstrapTable('load', data);
+  const data = [];
+  for (const obj of validADs.reverse()) {
+    const peerID = obj.peerID;
+    data.push({
+      adID: obj.adID.toNumber(),
+      pair: obj.pair,
+      buyOrSell: obj.buyOrSell ? 'Buy' : 'Sell',
+      amount: obj.amount.toNumber(),
+      peerID: peerID,
+      online: getPeerOnlineStatusImg(peerID),
+    });
+  }
+  tableAllADs.bootstrapTable('load', data);
 }
 
 async function main() {
+  if (typeof (window as any).ethereum === undefined) {
+    emitToplevelError('Metamask is required');
+  }
+  const ethereum = (window as any).ethereum;
+  if (!ethereum.isMetaMask) {
+    emitToplevelError('Metamask is required');
+  }
+  ethereum.autoRefreshOnNetworkChange = false;
   await ethereum.enable();
+  ethereum.on('networkChanged', () => {
+    window.location.reload();
+  });
+  ethereum.on('accountsChanged', () => {
+    window.location.reload();
+  });
   const provider = new ethers.providers.Web3Provider(ethereum);
+  const networkName = (await provider.getNetwork()).name;
+  const config = networkConfig[networkName];
+  if (config === undefined) {
+    const supportedNetowrks = [];
+    for (const n in networkConfig) {
+      supportedNetowrks.push(n);
+    }
+    const supportedNetworksStr = supportedNetowrks.join(', ');
+    emitToplevelError(
+      `Metamask: network \`${networkName}\` is not supported. ` +
+        `Please switch to the supported networks=[${supportedNetworksStr}]`
+    );
+  }
   const signer0 = provider.getSigner(0);
+  const contractJSON = require('../../build/contracts/PeekABook.json');
   const contractInstance = new ethers.Contract(
-    contractAddress,
+    config.contractAddress,
     contractJSON.abi,
     signer0
   );
   contract = new PeekABookContract(provider, contractInstance, {
-    fromBlock: contractAtBlock,
+    fromBlock: config.contractAtBlock,
   });
-  await fillMyADsTable(contract, await signer0.getAddress());
-  await fillValidADsTable(contract);
+  // tableAllADs.on('all.bs.table', function (e, name, args) {
+  //   console.log('all.bs.table: ', e, name, args);
+  // });
+  await startPollingOnlinePeers();
+  await updateMyADsTable(contract, await signer0.getAddress());
+  await updateValidADsTable(contract);
   tableSMPHistory.bootstrapTable({});
 }
 
 function addSMPRecord(
-  inOrOut: 'in' | 'out',
+  isInitiator: boolean,
   localPeerID: string,
   remotePeerID: string,
   adID: number,
@@ -105,15 +195,19 @@ function addSMPRecord(
   result: boolean
 ) {
   const data = {
-    direction: inOrOut,
+    initiator: isInitiator ? 'You' : 'Others',
     localPeerID: localPeerID,
     remotePeerID: remotePeerID,
     adID: adID,
     price: price,
     result: result,
-    timestamp: new Date().toISOString(),
+    timestamp: new Date().toUTCString(),
   };
   tableSMPHistory.bootstrapTable('append', [data]);
+}
+
+function getRandomPeerID(): string {
+  return uuidv4();
 }
 
 buttonNewAD.onclick = async () => {
@@ -128,21 +222,16 @@ buttonNewAD.onclick = async () => {
     // TODO: Notify in the page
     throw new Error('amount should not be empty');
   }
-  if (inputADPeerID.value === '') {
-    // TODO: Notify in the page
-    throw new Error('peer ID should not be empty');
-  }
   try {
     await contract.advertise({
       pair: inputADPair.value,
       buyOrSell: buyOrSell,
       amount: amount.toNumber(),
-      peerID: inputADPeerID.value,
+      peerID: getRandomPeerID(),
     });
     inputADPair.value = '';
     inputADBuyOrSell.value = '';
     inputADAmount.value = '';
-    inputADPeerID.value = '';
   } catch (e) {
     // TODO: Notify in the page
     throw e;
@@ -163,10 +252,7 @@ buttonNewAD.onclick = async () => {
 ) => {
   return `
   <div class="input-group">
-    <div class="input-group-prepend">
-      <span class="input-group-text">Price</span>
-    </div>
-    <input type="text" id="myADsSMPListenPrice_${row.adID}" aria-label="price" class="form-control" place>
+    <input type="number" min="1" id="myADsSMPListenPrice_${row.adID}" placeholder="Price" aria-label="price" class="form-control" place>
     <div class="input-group-append">
       <button class="btn btn-secondary" id="myADsSMPListenButton_${row.adID}">Listen</button>
     </div>
@@ -196,7 +282,7 @@ const buttonUnlisten = 'Unlisten';
       const peerInstance = new SMPPeer(priceInput.value, peerID);
       peerInstance.on('incoming', (remotePeerID: string, result: boolean) => {
         addSMPRecord(
-          'in',
+          true,
           peerID,
           remotePeerID,
           row.adID,
@@ -250,27 +336,25 @@ const buttonUnlisten = 'Unlisten';
 };
 
 /**
- * Data events for `tableValidADs`.
+ * Data events for `tableAllADs`.
  */
-(window as any).tableValidADsOperateFormatter = (
+
+(window as any).tableAllADsOperateFormatter = (
   value: any,
   row: any,
   index: any
 ) => {
   return `
   <div class="input-group">
-    <div class="input-group-prepend">
-      <span class="input-group-text">Price</span>
-    </div>
-    <input type="text" id="adsSMPPrice_${row.adID}" aria-label="price" class="form-control" place>
+    <input type="number" min="1" id="adsSMPPrice_${row.adID}" placeholder="Price" aria-label="price" class="form-control" place>
     <div class="input-group-append">
-      <button class="btn btn-secondary" id="buttonRun">Run</button>
+      <button class="btn btn-secondary" id="buttonRun">Match</button>
     </div>
   </div>
   `;
 };
 
-(window as any).tableValidADsOperateEvents = {
+(window as any).tableAllADsOperateEvents = {
   'click .btn': async (e: any, value: any, row: any, index: any) => {
     const priceInput = document.querySelector(
       `input#adsSMPPrice_${row.adID}`
@@ -284,19 +368,8 @@ const buttonUnlisten = 'Unlisten';
     // Since we already get the result, close the peer instance.
     peerInstance.disconnect();
     // TODO: Add spinning waiting label
-    tableValidADs.bootstrapTable('updateRow', {
-      index: index,
-      row: {
-        adID: row.adID,
-        pair: row.pair,
-        buyOrSell: row.buyOrSell,
-        amount: row.amount,
-        peerID: row.peerID,
-        samePrice: result,
-      },
-    });
     addSMPRecord(
-      'out',
+      false,
       localPeerID,
       row.peerID,
       row.adID,
@@ -306,4 +379,8 @@ const buttonUnlisten = 'Unlisten';
   },
 };
 
-main();
+Promise.resolve(main())
+  .then()
+  .catch((e) => {
+    throw e;
+  });
