@@ -8,8 +8,16 @@ import 'bootstrap-table';
 
 import { v4 as uuidv4 } from 'uuid';
 
-import { networkConfig } from './config';
+import { networkConfig, peerServerGetPeersURL } from './config';
 import { PeekABookContract } from './peekABookContract';
+
+const pollPeersInterval = 1000;
+const updateOnlinePeriod = 1500;
+
+const imageOnline =
+  '<img src="icons/correct.png" alt="Online" height="32" width="32">';
+const imageOffline =
+  '<img src="icons/criss-cross.png" alt="Online" height="32" width="32">';
 
 const tableMyADs = $('#tableMyIDs');
 const tableAllADs = $('#tableAllADs');
@@ -39,9 +47,26 @@ function emitToplevelError(errMsg: string) {
   throw new Error(errMsg);
 }
 
+async function getPeers() {
+  const t1 = performance.now();
+  const fetched = await fetch(peerServerGetPeersURL);
+  console.debug(`Spent ${performance.now() - t1} on fetching online peers`);
+  const parsed = await fetched.json();
+  return new Set(parsed as string[]);
+}
+
+let onlinePeers: Set<string>;
+
+async function startPollingOnlinePeers() {
+  onlinePeers = await getPeers();
+  setInterval(async () => {
+    onlinePeers = await getPeers();
+  }, pollPeersInterval);
+}
+
 let contract: PeekABookContract;
 
-async function fillMyADsTable(contract: PeekABookContract, myAddr: string) {
+async function updateMyADsTable(contract: PeekABookContract, myAddr: string) {
   const myValidADs = await contract.getValidAdvertisements(null, null, myAddr);
   const data = myValidADs
     .map((obj) => {
@@ -57,19 +82,58 @@ async function fillMyADsTable(contract: PeekABookContract, myAddr: string) {
   tableMyADs.bootstrapTable('load', data);
 }
 
-async function fillValidADsTable(contract: PeekABookContract) {
+function getPeerOnlineStatusImg(peerID: string): string {
+  if (onlinePeers.has(peerID)) {
+    return imageOnline;
+  } else {
+    return imageOffline;
+  }
+}
+
+let timeoutID: NodeJS.Timeout | undefined;
+
+async function updateValidADsTable(contract: PeekABookContract) {
+  // Remove the previous timer if any because we are setting up a new one later in this function.
+  if (timeoutID !== undefined) {
+    clearInterval(timeoutID);
+  }
+  // Automatically update online/offline after the table is loaded with data
+  // NOTE: `onLoadSuccess`(load-success.bs.table)[https://bootstrap-table.com/docs/api/events/#onloadsuccess]
+  //  is not working somehow. Use `onPostBody` instead.
+  tableAllADs.on('post-body.bs.table', function (event, data) {
+    // NOTE: Removing the listener is necessary because later `updateCell`s trigger this event, and
+    //  therefore the number of `setInterval` increases exponentially.
+    tableAllADs.off('post-body.bs.table');
+    timeoutID = setInterval(() => {
+      const tS = performance.now();
+      for (const index in data) {
+        const ad = data[index];
+        tableAllADs.bootstrapTable('updateCell', {
+          index: index,
+          field: 'online',
+          value: getPeerOnlineStatusImg(ad.peerID),
+        });
+      }
+      console.debug(
+        `Spent ${performance.now() - tS} ms on updating all online status ` +
+          'for table "All Advertisements"'
+      );
+    }, updateOnlinePeriod);
+  });
+
   const validADs = await contract.getValidAdvertisements();
-  const data = validADs
-    .map((obj) => {
-      return {
-        adID: obj.adID.toNumber(),
-        pair: obj.pair,
-        buyOrSell: obj.buyOrSell ? 'Buy' : 'Sell',
-        amount: obj.amount.toNumber(),
-        peerID: obj.peerID,
-      };
-    })
-    .reverse();
+  const data = [];
+  for (const obj of validADs.reverse()) {
+    const peerID = obj.peerID;
+    data.push({
+      adID: obj.adID.toNumber(),
+      pair: obj.pair,
+      buyOrSell: obj.buyOrSell ? 'Buy' : 'Sell',
+      amount: obj.amount.toNumber(),
+      peerID: peerID,
+      online: getPeerOnlineStatusImg(peerID),
+    });
+  }
   tableAllADs.bootstrapTable('load', data);
 }
 
@@ -113,8 +177,12 @@ async function main() {
   contract = new PeekABookContract(provider, contractInstance, {
     fromBlock: config.contractAtBlock,
   });
-  await fillMyADsTable(contract, await signer0.getAddress());
-  await fillValidADsTable(contract);
+  // tableAllADs.on('all.bs.table', function (e, name, args) {
+  //   console.log('all.bs.table: ', e, name, args);
+  // });
+  await startPollingOnlinePeers();
+  await updateMyADsTable(contract, await signer0.getAddress());
+  await updateValidADsTable(contract);
   tableSMPHistory.bootstrapTable({});
 }
 
@@ -133,7 +201,7 @@ function addSMPRecord(
     adID: adID,
     price: price,
     result: result,
-    timestamp: new Date().toISOString(),
+    timestamp: new Date().toUTCString(),
   };
   tableSMPHistory.bootstrapTable('append', [data]);
 }
@@ -270,6 +338,7 @@ const buttonUnlisten = 'Unlisten';
 /**
  * Data events for `tableAllADs`.
  */
+
 (window as any).tableAllADsOperateFormatter = (
   value: any,
   row: any,

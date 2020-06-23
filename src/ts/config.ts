@@ -9,3 +9,6 @@ export const networkConfig: {
     contractAddress: '0x74EF33Eb7aa3fF607E18aa240dD7176574c62d23',
   },
 };
+
+const peerServerURL = 'https://peekabookpeerserver.mhchia.com:8000';
+export const peerServerGetPeersURL = `${peerServerURL}/myapp/peerjs/peers`;
