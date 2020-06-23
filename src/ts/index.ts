@@ -14,14 +14,15 @@ import { PeekABookContract } from './peekABookContract';
 const pollPeersInterval = 1000;
 const updateOnlinePeriod = 1500;
 
-const imageOnline =
-  '<img src="icons/correct.png" alt="Online" height="32" width="32">';
-const imageOffline =
-  '<img src="icons/criss-cross.png" alt="Online" height="32" width="32">';
-
 const tableMyADs = $('#tableMyIDs');
 const tableAllADs = $('#tableAllADs');
 const tableSMPHistory = $('#tableSMPHistory');
+
+const spinnerHTML = `
+<div class="spinner-border spinner-border-sm" role="status">
+  <span class="sr-only">Loading...</span>
+</div>`;
+const matchButtonName = 'Match';
 
 const buttonNewAD = document.querySelector(
   'button#buttonNewAD'
@@ -39,12 +40,25 @@ const topBar = document.querySelector('div#topBar') as HTMLDivElement;
 
 const mapListeningPeers = new Map<string, SMPPeer>();
 
-function emitToplevelError(errMsg: string) {
+function emitError(errMsg: string) {
   topBar.innerHTML = `
-  <div class="alert alert-danger" role="alert">
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
     ${errMsg}
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+      <span aria-hidden="true">&times;</span>
+    </button>
   </div>`;
   throw new Error(errMsg);
+}
+
+function emitNotification(msg: string) {
+  topBar.innerHTML = `
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    ${msg}
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>`;
 }
 
 async function getPeers() {
@@ -82,11 +96,25 @@ async function updateMyADsTable(contract: PeekABookContract, myAddr: string) {
   tableMyADs.bootstrapTable('load', data);
 }
 
-function getPeerOnlineStatusImg(peerID: string): string {
+function updateValidADsTablePriceMatching(peerID: string, adID: number) {
+  const price = document.querySelector(
+    `input#adsSMPPrice_${adID}`
+  ) as HTMLInputElement;
+  const matchButton = document.querySelector(
+    `button#buttonRun_${adID}`
+  ) as HTMLButtonElement;
+  // SMP is running. Don't change the state of the price and button here
+  if (matchButton.innerHTML === spinnerHTML) {
+    return;
+  }
   if (onlinePeers.has(peerID)) {
-    return imageOnline;
+    price.disabled = false;
+    price.placeholder = 'Price';
+    matchButton.disabled = false;
   } else {
-    return imageOffline;
+    price.disabled = true;
+    price.placeholder = 'Advertiser is offline...';
+    matchButton.disabled = true;
   }
 }
 
@@ -101,18 +129,12 @@ async function updateValidADsTable(contract: PeekABookContract) {
   // NOTE: `onLoadSuccess`(load-success.bs.table)[https://bootstrap-table.com/docs/api/events/#onloadsuccess]
   //  is not working somehow. Use `onPostBody` instead.
   tableAllADs.on('post-body.bs.table', function (event, data) {
-    // NOTE: Removing the listener is necessary because later `updateCell`s trigger this event, and
-    //  therefore the number of `setInterval` increases exponentially.
     tableAllADs.off('post-body.bs.table');
     timeoutID = setInterval(() => {
       const tS = performance.now();
       for (const index in data) {
         const ad = data[index];
-        tableAllADs.bootstrapTable('updateCell', {
-          index: index,
-          field: 'online',
-          value: getPeerOnlineStatusImg(ad.peerID),
-        });
+        updateValidADsTablePriceMatching(ad.peerID, ad.adID);
       }
       console.debug(
         `Spent ${performance.now() - tS} ms on updating all online status ` +
@@ -131,7 +153,6 @@ async function updateValidADsTable(contract: PeekABookContract) {
       buyOrSell: obj.buyOrSell ? 'Buy' : 'Sell',
       amount: obj.amount.toNumber(),
       peerID: peerID,
-      online: getPeerOnlineStatusImg(peerID),
     });
   }
   tableAllADs.bootstrapTable('load', data);
@@ -139,11 +160,11 @@ async function updateValidADsTable(contract: PeekABookContract) {
 
 async function main() {
   if (typeof (window as any).ethereum === undefined) {
-    emitToplevelError('Metamask is required');
+    emitError('Metamask is required');
   }
   const ethereum = (window as any).ethereum;
   if (!ethereum.isMetaMask) {
-    emitToplevelError('Metamask is required');
+    emitError('Metamask is required');
   }
   ethereum.autoRefreshOnNetworkChange = false;
   await ethereum.enable();
@@ -162,7 +183,7 @@ async function main() {
       supportedNetowrks.push(n);
     }
     const supportedNetworksStr = supportedNetowrks.join(', ');
-    emitToplevelError(
+    emitError(
       `Metamask: network \`${networkName}\` is not supported. ` +
         `Please switch to the supported networks=[${supportedNetworksStr}]`
     );
@@ -177,9 +198,6 @@ async function main() {
   contract = new PeekABookContract(provider, contractInstance, {
     fromBlock: config.contractAtBlock,
   });
-  // tableAllADs.on('all.bs.table', function (e, name, args) {
-  //   console.log('all.bs.table: ', e, name, args);
-  // });
   await startPollingOnlinePeers();
   await updateMyADsTable(contract, await signer0.getAddress());
   await updateValidADsTable(contract);
@@ -215,12 +233,10 @@ buttonNewAD.onclick = async () => {
   // TODO: Should change `AD.number` to `BN`?
   const amount = new BN(inputADAmount.value, 10);
   if (inputADPair.value === '') {
-    // TODO: Notify in the page
-    throw new Error('pair should not be empty');
+    emitError('`Pair` should not be empty');
   }
   if (inputADAmount.value === '') {
-    // TODO: Notify in the page
-    throw new Error('amount should not be empty');
+    emitError('`Amount` should not be empty');
   }
   try {
     await contract.advertise({
@@ -232,9 +248,12 @@ buttonNewAD.onclick = async () => {
     inputADPair.value = '';
     inputADBuyOrSell.value = '';
     inputADAmount.value = '';
+    emitNotification(
+      'Successfully sent the advertisement transaction. ' +
+        'Please wait for a while for its confirmation.'
+    );
   } catch (e) {
-    // TODO: Notify in the page
-    throw e;
+    emitError(`Failed to send the advertisement transaction on chain: ${e}`);
   }
   // TODO:
   //  Refresh table MyADs in a few seconds?
@@ -268,21 +287,25 @@ const buttonUnlisten = 'Unlisten';
     const priceInput = document.querySelector(
       `input#myADsSMPListenPrice_${row.adID}`
     ) as HTMLInputElement;
+    const price = priceInput.value;
+    if (price === '') {
+      emitError('`Price` should not be empty');
+    }
     const button = document.querySelector(
       `button#myADsSMPListenButton_${row.adID}`
     ) as HTMLButtonElement;
     const peerID = row.peerID;
     if (button.innerHTML === buttonListen) {
       if (mapListeningPeers.has(peerID)) {
-        throw new Error(`peer ID is already listened: peerID=${peerID}`);
+        emitError(`Peer ID is already listened: peerID=${peerID}`);
       }
       priceInput.disabled = true;
       button.disabled = true;
 
-      const peerInstance = new SMPPeer(priceInput.value, peerID);
+      const peerInstance = new SMPPeer(price, peerID);
       peerInstance.on('incoming', (remotePeerID: string, result: boolean) => {
         addSMPRecord(
-          true,
+          false,
           peerID,
           remotePeerID,
           row.adID,
@@ -295,7 +318,7 @@ const buttonUnlisten = 'Unlisten';
       } catch (e) {
         priceInput.disabled = false;
         button.disabled = false;
-        throw e;
+        emitError(`Failed to listen to the matching requests: ${e}`);
       }
       // Finished connecting to the peer server. Now, we can safely add the peer in the map.
       const newPeerID = peerInstance.id;
@@ -312,7 +335,7 @@ const buttonUnlisten = 'Unlisten';
       button.innerHTML = buttonListen;
     } else {
       // Sanity check
-      throw new Error(`unrecognized button innerHTML: ${button.innerHTML}`);
+      emitError(`Unrecognized button innerHTML: ${button.innerHTML}`);
     }
   },
 };
@@ -331,7 +354,15 @@ const buttonUnlisten = 'Unlisten';
 
 (window as any).tableMyADsDeleteOperateEvents = {
   'click .remove': async (e: any, value: any, row: any, index: any) => {
-    await contract.invalidate(row.adID);
+    try {
+      await contract.invalidate(row.adID);
+    } catch (e) {
+      emitError(`Failed to invalidate the advertisement on chain: ${e}`);
+    }
+    emitNotification(
+      'Successfully sent the invalidate transaction. ' +
+        'Please wait for a while for its confirmation.'
+    );
   },
 };
 
@@ -348,7 +379,7 @@ const buttonUnlisten = 'Unlisten';
   <div class="input-group">
     <input type="number" min="1" id="adsSMPPrice_${row.adID}" placeholder="Price" aria-label="price" class="form-control" place>
     <div class="input-group-append">
-      <button class="btn btn-secondary" id="buttonRun">Match</button>
+      <button class="btn btn-secondary" id="buttonRun_${row.adID}">${matchButtonName}</button>
     </div>
   </div>
   `;
@@ -359,28 +390,43 @@ const buttonUnlisten = 'Unlisten';
     const priceInput = document.querySelector(
       `input#adsSMPPrice_${row.adID}`
     ) as HTMLInputElement;
-    // Create a temporary `SMPPeer` to run SMP with the remote peer.
-    const peerInstance = new SMPPeer(priceInput.value, undefined);
-    await peerInstance.connectToPeerServer();
-    const localPeerID = peerInstance.id;
-    const remotePeerID = row.peerID;
-    const result = await peerInstance.runSMP(remotePeerID);
-    // Since we already get the result, close the peer instance.
-    peerInstance.disconnect();
-    // TODO: Add spinning waiting label
-    addSMPRecord(
-      false,
-      localPeerID,
-      row.peerID,
-      row.adID,
-      priceInput.value,
-      result
-    );
+    const price = priceInput.value;
+    if (price === '') {
+      emitError('`Price` should not be empty');
+    }
+    const button = document.querySelector(
+      `button#buttonRun_${row.adID}`
+    ) as HTMLButtonElement;
+    // Disable the button in case accidental clicks.
+    if (button.disabled) {
+      return;
+    }
+    button.innerHTML = spinnerHTML;
+    button.disabled = true;
+    priceInput.disabled = true;
+    try {
+      // Create a temporary `SMPPeer` to run SMP with the remote peer.
+      const peerInstance = new SMPPeer(price, undefined);
+      await peerInstance.connectToPeerServer();
+      const localPeerID = peerInstance.id;
+      const remotePeerID = row.peerID;
+      const result = await peerInstance.runSMP(remotePeerID);
+      // Since we already get the result, close the peer instance.
+      peerInstance.disconnect();
+      addSMPRecord(true, localPeerID, row.peerID, row.adID, price, result);
+    } catch (e) {
+      emitError(`Failed to match with the advertiser: ${e}`);
+    } finally {
+      // Recover the disabled button and input
+      button.innerHTML = matchButtonName;
+      button.disabled = false;
+      priceInput.disabled = false;
+    }
   },
 };
 
 Promise.resolve(main())
   .then()
   .catch((e) => {
-    throw e;
+    emitError(e);
   });
