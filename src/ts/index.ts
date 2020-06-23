@@ -18,6 +18,12 @@ const tableMyADs = $('#tableMyIDs');
 const tableAllADs = $('#tableAllADs');
 const tableSMPHistory = $('#tableSMPHistory');
 
+const spinnerHTML = `
+<div class="spinner-border spinner-border-sm" role="status">
+  <span class="sr-only">Loading...</span>
+</div>`;
+const matchButtonName = 'Match';
+
 const buttonNewAD = document.querySelector(
   'button#buttonNewAD'
 ) as HTMLButtonElement;
@@ -97,6 +103,10 @@ function updateValidADsTablePriceMatching(peerID: string, adID: number) {
   const matchButton = document.querySelector(
     `button#buttonRun_${adID}`
   ) as HTMLButtonElement;
+  // SMP is running. Don't change the state of the price and button here
+  if (matchButton.innerHTML === spinnerHTML) {
+    return;
+  }
   if (onlinePeers.has(peerID)) {
     price.disabled = false;
     price.placeholder = 'Price';
@@ -243,7 +253,7 @@ buttonNewAD.onclick = async () => {
         'Please wait for a while for its confirmation.'
     );
   } catch (e) {
-    emitError(`Failed to send advertise on chain: ${e}`);
+    emitError(`Failed to send the advertisement transaction on chain: ${e}`);
   }
   // TODO:
   //  Refresh table MyADs in a few seconds?
@@ -287,7 +297,7 @@ const buttonUnlisten = 'Unlisten';
     const peerID = row.peerID;
     if (button.innerHTML === buttonListen) {
       if (mapListeningPeers.has(peerID)) {
-        emitError(`peer ID is already listened: peerID=${peerID}`);
+        emitError(`Peer ID is already listened: peerID=${peerID}`);
       }
       priceInput.disabled = true;
       button.disabled = true;
@@ -308,7 +318,7 @@ const buttonUnlisten = 'Unlisten';
       } catch (e) {
         priceInput.disabled = false;
         button.disabled = false;
-        emitError(`Failed to connect to the peer server: ${e}`);
+        emitError(`Failed to listen to the matching requests: ${e}`);
       }
       // Finished connecting to the peer server. Now, we can safely add the peer in the map.
       const newPeerID = peerInstance.id;
@@ -325,7 +335,7 @@ const buttonUnlisten = 'Unlisten';
       button.innerHTML = buttonListen;
     } else {
       // Sanity check
-      emitError(`unrecognized button innerHTML: ${button.innerHTML}`);
+      emitError(`Unrecognized button innerHTML: ${button.innerHTML}`);
     }
   },
 };
@@ -369,7 +379,7 @@ const buttonUnlisten = 'Unlisten';
   <div class="input-group">
     <input type="number" min="1" id="adsSMPPrice_${row.adID}" placeholder="Price" aria-label="price" class="form-control" place>
     <div class="input-group-append">
-      <button class="btn btn-secondary" id="buttonRun_${row.adID}">Match</button>
+      <button class="btn btn-secondary" id="buttonRun_${row.adID}">${matchButtonName}</button>
     </div>
   </div>
   `;
@@ -381,16 +391,37 @@ const buttonUnlisten = 'Unlisten';
       `input#adsSMPPrice_${row.adID}`
     ) as HTMLInputElement;
     const price = priceInput.value;
-    // Create a temporary `SMPPeer` to run SMP with the remote peer.
-    const peerInstance = new SMPPeer(price, undefined);
-    await peerInstance.connectToPeerServer();
-    const localPeerID = peerInstance.id;
-    const remotePeerID = row.peerID;
-    const result = await peerInstance.runSMP(remotePeerID);
-    // Since we already get the result, close the peer instance.
-    peerInstance.disconnect();
-    // TODO: Add spinning waiting label
-    addSMPRecord(true, localPeerID, row.peerID, row.adID, price, result);
+    if (price === '') {
+      emitError('`Price` should not be empty');
+    }
+    const button = document.querySelector(
+      `button#buttonRun_${row.adID}`
+    ) as HTMLButtonElement;
+    // Disable the button in case accidental clicks.
+    if (button.disabled) {
+      return;
+    }
+    button.innerHTML = spinnerHTML;
+    button.disabled = true;
+    priceInput.disabled = true;
+    try {
+      // Create a temporary `SMPPeer` to run SMP with the remote peer.
+      const peerInstance = new SMPPeer(price, undefined);
+      await peerInstance.connectToPeerServer();
+      const localPeerID = peerInstance.id;
+      const remotePeerID = row.peerID;
+      const result = await peerInstance.runSMP(remotePeerID);
+      // Since we already get the result, close the peer instance.
+      peerInstance.disconnect();
+      addSMPRecord(true, localPeerID, row.peerID, row.adID, price, result);
+    } catch (e) {
+      emitError(`Failed to match with the advertiser: ${e}`);
+    } finally {
+      // Recover the disabled button and input
+      button.innerHTML = matchButtonName;
+      button.disabled = false;
+      priceInput.disabled = false;
+    }
   },
 };
 
