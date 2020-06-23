@@ -4,7 +4,7 @@
   "description": "A private order matching system. https://ethresear.ch/t/peekabook-private-order-matching/6987",
   "scripts": {
     "lint": "tsdx lint src test",
-    "build": "truffle compile; mkdir -p build; npx webpack --config webpack.config.js && cp src/index.html build/ && cp -r icons build/",
+    "build": "truffle compile; mkdir -p build; npx webpack --config webpack.config.js && cp src/index.html build/",
     "test": "truffle compile; ganache-cli & ganache_pid=$!; sleep 2; tsdx test test/; kill $ganache_pid;"
   },
   "prettier": {

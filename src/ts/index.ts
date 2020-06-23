@@ -14,11 +14,6 @@ import { PeekABookContract } from './peekABookContract';
 const pollPeersInterval = 1000;
 const updateOnlinePeriod = 1500;
 
-const imageOnline =
-  '<img src="icons/correct.png" alt="Online" height="32" width="32">';
-const imageOffline =
-  '<img src="icons/criss-cross.png" alt="Online" height="32" width="32">';
-
 const tableMyADs = $('#tableMyIDs');
 const tableAllADs = $('#tableAllADs');
 const tableSMPHistory = $('#tableSMPHistory');
@@ -82,11 +77,21 @@ async function updateMyADsTable(contract: PeekABookContract, myAddr: string) {
   tableMyADs.bootstrapTable('load', data);
 }
 
-function getPeerOnlineStatusImg(peerID: string): string {
+function updateValidADsTablePriceMatching(peerID: string, adID: number) {
+  const price = document.querySelector(
+    `input#adsSMPPrice_${adID}`
+  ) as HTMLInputElement;
+  const matchButton = document.querySelector(
+    `button#buttonRun_${adID}`
+  ) as HTMLButtonElement;
   if (onlinePeers.has(peerID)) {
-    return imageOnline;
+    price.disabled = false;
+    price.placeholder = 'Price';
+    matchButton.disabled = false;
   } else {
-    return imageOffline;
+    price.disabled = true;
+    price.placeholder = 'Advertiser is offline...';
+    matchButton.disabled = true;
   }
 }
 
@@ -101,18 +106,12 @@ async function updateValidADsTable(contract: PeekABookContract) {
   // NOTE: `onLoadSuccess`(load-success.bs.table)[https://bootstrap-table.com/docs/api/events/#onloadsuccess]
   //  is not working somehow. Use `onPostBody` instead.
   tableAllADs.on('post-body.bs.table', function (event, data) {
-    // NOTE: Removing the listener is necessary because later `updateCell`s trigger this event, and
-    //  therefore the number of `setInterval` increases exponentially.
     tableAllADs.off('post-body.bs.table');
     timeoutID = setInterval(() => {
       const tS = performance.now();
       for (const index in data) {
         const ad = data[index];
-        tableAllADs.bootstrapTable('updateCell', {
-          index: index,
-          field: 'online',
-          value: getPeerOnlineStatusImg(ad.peerID),
-        });
+        updateValidADsTablePriceMatching(ad.peerID, ad.adID);
       }
       console.debug(
         `Spent ${performance.now() - tS} ms on updating all online status ` +
@@ -131,7 +130,6 @@ async function updateValidADsTable(contract: PeekABookContract) {
       buyOrSell: obj.buyOrSell ? 'Buy' : 'Sell',
       amount: obj.amount.toNumber(),
       peerID: peerID,
-      online: getPeerOnlineStatusImg(peerID),
     });
   }
   tableAllADs.bootstrapTable('load', data);
@@ -348,7 +346,7 @@ const buttonUnlisten = 'Unlisten';
   <div class="input-group">
     <input type="number" min="1" id="adsSMPPrice_${row.adID}" placeholder="Price" aria-label="price" class="form-control" place>
     <div class="input-group-append">
-      <button class="btn btn-secondary" id="buttonRun">Match</button>
+      <button class="btn btn-secondary" id="buttonRun_${row.adID}">Match</button>
     </div>
   </div>
   `;
@@ -359,8 +357,9 @@ const buttonUnlisten = 'Unlisten';
     const priceInput = document.querySelector(
       `input#adsSMPPrice_${row.adID}`
     ) as HTMLInputElement;
+    const price = priceInput.value;
     // Create a temporary `SMPPeer` to run SMP with the remote peer.
-    const peerInstance = new SMPPeer(priceInput.value, undefined);
+    const peerInstance = new SMPPeer(price, undefined);
     await peerInstance.connectToPeerServer();
     const localPeerID = peerInstance.id;
     const remotePeerID = row.peerID;
