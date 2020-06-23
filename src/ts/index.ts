@@ -34,12 +34,25 @@ const topBar = document.querySelector('div#topBar') as HTMLDivElement;
 
 const mapListeningPeers = new Map<string, SMPPeer>();
 
-function emitToplevelError(errMsg: string) {
+function emitError(errMsg: string) {
   topBar.innerHTML = `
-  <div class="alert alert-danger" role="alert">
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
     ${errMsg}
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+      <span aria-hidden="true">&times;</span>
+    </button>
   </div>`;
   throw new Error(errMsg);
+}
+
+function emitNotification(msg: string) {
+  topBar.innerHTML = `
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    ${msg}
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>`;
 }
 
 async function getPeers() {
@@ -137,11 +150,11 @@ async function updateValidADsTable(contract: PeekABookContract) {
 
 async function main() {
   if (typeof (window as any).ethereum === undefined) {
-    emitToplevelError('Metamask is required');
+    emitError('Metamask is required');
   }
   const ethereum = (window as any).ethereum;
   if (!ethereum.isMetaMask) {
-    emitToplevelError('Metamask is required');
+    emitError('Metamask is required');
   }
   ethereum.autoRefreshOnNetworkChange = false;
   await ethereum.enable();
@@ -160,7 +173,7 @@ async function main() {
       supportedNetowrks.push(n);
     }
     const supportedNetworksStr = supportedNetowrks.join(', ');
-    emitToplevelError(
+    emitError(
       `Metamask: network \`${networkName}\` is not supported. ` +
         `Please switch to the supported networks=[${supportedNetworksStr}]`
     );
@@ -175,9 +188,6 @@ async function main() {
   contract = new PeekABookContract(provider, contractInstance, {
     fromBlock: config.contractAtBlock,
   });
-  // tableAllADs.on('all.bs.table', function (e, name, args) {
-  //   console.log('all.bs.table: ', e, name, args);
-  // });
   await startPollingOnlinePeers();
   await updateMyADsTable(contract, await signer0.getAddress());
   await updateValidADsTable(contract);
@@ -213,12 +223,10 @@ buttonNewAD.onclick = async () => {
   // TODO: Should change `AD.number` to `BN`?
   const amount = new BN(inputADAmount.value, 10);
   if (inputADPair.value === '') {
-    // TODO: Notify in the page
-    throw new Error('pair should not be empty');
+    emitError('`Pair` should not be empty');
   }
   if (inputADAmount.value === '') {
-    // TODO: Notify in the page
-    throw new Error('amount should not be empty');
+    emitError('`Amount` should not be empty');
   }
   try {
     await contract.advertise({
@@ -230,9 +238,12 @@ buttonNewAD.onclick = async () => {
     inputADPair.value = '';
     inputADBuyOrSell.value = '';
     inputADAmount.value = '';
+    emitNotification(
+      'Successfully sent the advertisement transaction. ' +
+        'Please wait for a while for its confirmation.'
+    );
   } catch (e) {
-    // TODO: Notify in the page
-    throw e;
+    emitError(`Failed to send advertise on chain: ${e}`);
   }
   // TODO:
   //  Refresh table MyADs in a few seconds?
@@ -266,18 +277,22 @@ const buttonUnlisten = 'Unlisten';
     const priceInput = document.querySelector(
       `input#myADsSMPListenPrice_${row.adID}`
     ) as HTMLInputElement;
+    const price = priceInput.value;
+    if (price === '') {
+      emitError('`Price` should not be empty');
+    }
     const button = document.querySelector(
       `button#myADsSMPListenButton_${row.adID}`
     ) as HTMLButtonElement;
     const peerID = row.peerID;
     if (button.innerHTML === buttonListen) {
       if (mapListeningPeers.has(peerID)) {
-        throw new Error(`peer ID is already listened: peerID=${peerID}`);
+        emitError(`peer ID is already listened: peerID=${peerID}`);
       }
       priceInput.disabled = true;
       button.disabled = true;
 
-      const peerInstance = new SMPPeer(priceInput.value, peerID);
+      const peerInstance = new SMPPeer(price, peerID);
       peerInstance.on('incoming', (remotePeerID: string, result: boolean) => {
         addSMPRecord(
           false,
@@ -293,7 +308,7 @@ const buttonUnlisten = 'Unlisten';
       } catch (e) {
         priceInput.disabled = false;
         button.disabled = false;
-        throw e;
+        emitError(`Failed to connect to the peer server: ${e}`);
       }
       // Finished connecting to the peer server. Now, we can safely add the peer in the map.
       const newPeerID = peerInstance.id;
@@ -310,7 +325,7 @@ const buttonUnlisten = 'Unlisten';
       button.innerHTML = buttonListen;
     } else {
       // Sanity check
-      throw new Error(`unrecognized button innerHTML: ${button.innerHTML}`);
+      emitError(`unrecognized button innerHTML: ${button.innerHTML}`);
     }
   },
 };
@@ -329,7 +344,15 @@ const buttonUnlisten = 'Unlisten';
 
 (window as any).tableMyADsDeleteOperateEvents = {
   'click .remove': async (e: any, value: any, row: any, index: any) => {
-    await contract.invalidate(row.adID);
+    try {
+      await contract.invalidate(row.adID);
+    } catch (e) {
+      emitError(`Failed to invalidate the advertisement on chain: ${e}`);
+    }
+    emitNotification(
+      'Successfully sent the invalidate transaction. ' +
+        'Please wait for a while for its confirmation.'
+    );
   },
 };
 
@@ -374,5 +397,5 @@ const buttonUnlisten = 'Unlisten';
 Promise.resolve(main())
   .then()
   .catch((e) => {
-    throw e;
+    emitError(e);
   });
