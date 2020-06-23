@@ -280,7 +280,7 @@ const buttonUnlisten = 'Unlisten';
       const peerInstance = new SMPPeer(priceInput.value, peerID);
       peerInstance.on('incoming', (remotePeerID: string, result: boolean) => {
         addSMPRecord(
-          true,
+          false,
           peerID,
           remotePeerID,
           row.adID,
@@ -367,14 +367,7 @@ const buttonUnlisten = 'Unlisten';
     // Since we already get the result, close the peer instance.
     peerInstance.disconnect();
     // TODO: Add spinning waiting label
-    addSMPRecord(
-      false,
-      localPeerID,
-      row.peerID,
-      row.adID,
-      priceInput.value,
-      result
-    );
+    addSMPRecord(true, localPeerID, row.peerID, row.adID, price, result);
   },
 };
 
