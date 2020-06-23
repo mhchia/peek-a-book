@@ -10,37 +10,23 @@
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
     <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.16.0/dist/bootstrap-table.min.css">
 
-
     <title>PeekABook Client</title>
   </head>
   <body>
 	<div id="topBar"></div>
 
-	<h2 class="text-center">My advertisements</h2>
+	<h2 class="text-center">My Advertisements</h2>
 	<div id="myADsToolbar">
 		<div class="input-group">
 			<div class="input-group-prepend">
 				<button id="buttonNewAD" class="btn btn-secondary">New</button>
 			</div>
-			<div class="input-group-prepend">
-			 	<span class="input-group-text">Pair</span>
-			</div>
-			<input type="text" id="inputADPair" aria-label="pair" class="form-control">
-			<div class="input-group-prepend">
-				<span class="input-group-text">Buy/Sell</span>
-			</div>
+			<input type="text" id="inputADPair" placeholder="Pair" aria-label="pair" class="form-control">
 			<select class="custom-select" id="inputADBuyOrSell" aria-label="buyOrSell">
 				<option value="buy">Buy</option>
 				<option value="sell">Sell</option>
 			</select>
-			<div class="input-group-prepend">
-				<span class="input-group-text">Amount</span>
-			</div>
-			<input type="text" id="inputADAmount" aria-label="amount" class="form-control">
-			<div class="input-group-prepend">
-			 	<span class="input-group-text">Peer ID</span>
-			</div>
-			<input type="text" id="inputADPeerID" aria-label="peerID" class="form-control">
+			<input type="number" min="1" id="inputADAmount" placeholder="Amount" aria-label="amount" class="form-control">
 		</div>
 	</div>
 	<div class="container">
@@ -54,10 +40,10 @@
 				<th data-field="pair">Pair</th>
 				<th data-field="buyOrSell">Buy/Sell</th>
 				<th data-field="amount">Amount</th>
-				<th data-field="peerID">Peer ID</th>
+				<th data-field="peerID" data-visible="false">Peer ID</th>
 				<th data-field="smp"
 					data-formatter="tableMyADsOperateFormatter"
-					data-events="tableMyADsOperateEvents">SMP</th>
+					data-events="tableMyADsOperateEvents">Listen to matching requests</th>
 				<th data-field="delete"
 					data-formatter="tableMyADsDeleteOperateFormatter"
 					data-events="tableMyADsDeleteOperateEvents">Delete</th>
@@ -66,10 +52,10 @@
 		</table>
 	</div>
 
-	<h2 class="text-center">Valid advertisements</h2>
+	<h2 class="text-center">All Advertisements</h2>
 	<div class="container">
 		<table
-			id="tableValidADs"
+			id="tableAllADs"
 			data-toggle="table">
 			<thead>
 			  <tr>
@@ -77,29 +63,29 @@
 				<th data-field="pair">Pair</th>
 				<th data-field="buyOrSell">Buy/Sell</th>
 				<th data-field="amount">Amount</th>
-				<th data-field="peerID">Peer ID</th>
+				<th data-field="peerID" data-visible="false">Peer ID</th>
+				<th data-field="online">Online</th>
 				<th data-field="smp"
-					data-formatter="tableValidADsOperateFormatter"
-					data-events="tableValidADsOperateEvents">SMP</th>
-				<th data-field="samePrice">Result</th>
+					data-formatter="tableAllADsOperateFormatter"
+					data-events="tableAllADsOperateEvents">Match price</th>
 			  </tr>
 			</thead>
 		</table>
 	</div>
 
-	<h2 class="text-center">SMP History</h2>
+	<h2 class="text-center">Price Matching History</h2>
 	<div class="container">
 		<table
 			id="tableSMPHistory"
 			data-toggle="table">
 			<thead>
 			  <tr>
-				<th data-field="direction">Direction</th>
-				<th data-field="localPeerID">Local Peer ID</th>
-				<th data-field="remotePeerID">Remote Peer ID</th>
+				<th data-field="initiator">Initiator</th>
+				<th data-field="localPeerID" data-visible="false">Local Peer ID</th>
+				<th data-field="remotePeerID" data-visible="false">Remote Peer ID</th>
 				<th data-field="adID">Advertisement ID</th>
 				<th data-field="price">Price</th>
-				<th data-field="result">Result</th>
+				<th data-field="result">Matched</th>
 				<th data-field="timestamp">Timestamp</th>
 			  </tr>
 			</thead>
@@ -107,5 +93,8 @@
 	</div>
 
 	<script src="js/index.js"></script>
+	<footer class="page-footer font-small">
+		<div class="text-center">Icons made by <a href="https://www.flaticon.com/authors/pixel-perfect" title="Pixel perfect">Pixel perfect</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
+	</footer>
   </body>
 </html>
