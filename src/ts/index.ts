@@ -409,7 +409,7 @@ const buttonUnlisten = 'Unlisten';
 ) => {
   return [
     '<a class="remove" href="javascript:void(0)" title="Remove">',
-    '<i class="fa fa-trash"></i>',
+    '<i class="fa fa-trash text-danger"></i>',
     '</a>',
   ].join('');
 };
