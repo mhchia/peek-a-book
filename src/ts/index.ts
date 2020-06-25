@@ -216,7 +216,7 @@ async function updateValidADsTable(contract: PeekABookContract) {
 }
 
 async function main() {
-  if (typeof (window as any).ethereum === undefined) {
+  if ((window as any).ethereum === undefined) {
     emitError('Metamask is required');
   }
   const ethereum = (window as any).ethereum;
