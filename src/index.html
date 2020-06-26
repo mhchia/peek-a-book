@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
     <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.16.0/dist/bootstrap-table.min.css">
 
-    <title>PeekABook Client</title>
+    <title>PeekABook</title>
   </head>
   <body>
 	<header>
@@ -40,7 +40,10 @@
 			<table
 				id="tableMyIDs"
 				data-toggle="table"
-				data-toolbar="#myADsToolbar">
+				data-toolbar="#myADsToolbar"
+				data-height="360"
+				data-search="true"
+				data-pagination="true">
 				<thead>
 				<tr>
 					<th data-field="adID">Advertisement ID</th>
@@ -65,7 +68,10 @@
 		<div class="container">
 			<table
 				id="tableAllADs"
-				data-toggle="table">
+				data-toggle="table"
+				data-height="460"
+				data-pagination="true"
+				data-search="true">
 				<thead>
 				<tr>
 					<th data-field="adID">Advertisement ID</th>
@@ -87,7 +93,8 @@
 		<div class="container">
 			<table
 				id="tableSMPHistory"
-				data-toggle="table">
+				data-toggle="table"
+				data-height="300">
 				<thead>
 				<tr>
 					<th data-field="initiator">Initiator</th>
