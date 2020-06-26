@@ -8,11 +8,13 @@ import 'bootstrap-table';
 
 import { v4 as uuidv4 } from 'uuid';
 
-import { networkConfig, peerServerGetPeersURL } from './config';
+import { TNetworkConfig, networkConfig, peerServerGetPeersURL } from './config';
 import { PeekABookContract, AdvertiseLog } from './peekABookContract';
 
 const pollPeersInterval = 1000;
 const updateOnlinePeriod = 1500;
+
+let config: TNetworkConfig;
 
 // Enable tooltips
 $(function () {
@@ -255,7 +257,7 @@ async function main() {
   });
   const provider = new ethers.providers.Web3Provider(ethereum);
   const networkName = (await provider.getNetwork()).name;
-  const config = networkConfig[networkName];
+  config = networkConfig[networkName];
   if (config === undefined) {
     const supportedNetowrks = [];
     for (const n in networkConfig) {
@@ -322,7 +324,7 @@ buttonNewAD.onclick = async () => {
   }
   const pairName = getPairName(inputCurrency1.value, inputCurrency2.value);
   try {
-    await contract.advertise({
+    const tx = await contract.advertise({
       pair: pairName,
       buyOrSell: buyOrSell,
       amount: amount.toNumber(),
@@ -332,8 +334,11 @@ buttonNewAD.onclick = async () => {
     inputCurrency2.value = '';
     inputADBuyOrSell.value = '';
     inputADAmount.value = '';
+    const txHash = tx.hash;
+    const txExplorerURL = `${config.etherscanURL}/tx/${txHash}`;
     emitNotification(
-      'Successfully sent the advertisement transaction. ' +
+      'Successfully sent the advertisement transaction ' +
+        `<a href="${txExplorerURL}" class="alert-link">${txHash}</a>. ` +
         'Please wait for a while for its confirmation.'
     );
   } catch (e) {
@@ -444,14 +449,17 @@ const buttonUnlisten = 'Unlisten';
 (window as any).tableMyADsDeleteOperateEvents = {
   'click .remove': async (e: any, value: any, row: any, index: any) => {
     try {
-      await contract.invalidate(row.adID);
+      const tx = await contract.invalidate(row.adID);
+      const txHash = tx.hash;
+      const txExplorerURL = `${config.etherscanURL}/tx/${txHash}`;
+      emitNotification(
+        'Successfully sent the invalidate transaction ' +
+          `<a href="${txExplorerURL}" class="alert-link">${txHash}</a>. ` +
+          'Please wait for a while for its confirmation.'
+      );
     } catch (e) {
       emitError(`Failed to invalidate the advertisement on chain: ${e}`);
     }
-    emitNotification(
-      'Successfully sent the invalidate transaction. ' +
-        'Please wait for a while for its confirmation.'
-    );
   },
 };
 
