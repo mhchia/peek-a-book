@@ -23,12 +23,17 @@
 				<div class="input-group-prepend">
 					<button id="buttonNewAD" class="btn btn-secondary">New</button>
 				</div>
-				<input type="text" id="inputADPair" placeholder="Pair" aria-label="pair" class="form-control">
 				<select class="custom-select" id="inputADBuyOrSell" aria-label="buyOrSell">
 					<option value="buy">Buy</option>
 					<option value="sell">Sell</option>
 				</select>
+				<input list="erc20TokenList" id="inputCurrency1" placeholder="Currency" aria-label="currency1" class="form-control">
 				<input type="number" min="1" id="inputADAmount" placeholder="Amount" aria-label="amount" class="form-control">
+				<div class="input-group-prepend">
+					<span class="input-group-text bg-white" id="spanADWithOrFor">With</span>
+				</div>
+				<input list="erc20TokenList" id="inputCurrency2" placeholder="Currency" aria-label="currency2" class="form-control">
+				<datalist id="erc20TokenList"></datalist>
 			</div>
 		</div>
 		<div class="container">
@@ -39,9 +44,11 @@
 				<thead>
 				<tr>
 					<th data-field="adID">Advertisement ID</th>
-					<th data-field="pair">Pair</th>
 					<th data-field="buyOrSell">Buy/Sell</th>
 					<th data-field="amount">Amount</th>
+					<th data-field="currency1">Currency 1</th>
+					<th data-field="withOrFor" data-formatter="withOrForFormatter"></th>
+					<th data-field="currency2">Currency 2</th>
 					<th data-field="peerID" data-visible="false">Peer ID</th>
 					<th data-field="smp"
 						data-formatter="tableMyADsOperateFormatter"
@@ -62,9 +69,11 @@
 				<thead>
 				<tr>
 					<th data-field="adID">Advertisement ID</th>
-					<th data-field="pair">Pair</th>
 					<th data-field="buyOrSell">Buy/Sell</th>
 					<th data-field="amount">Amount</th>
+					<th data-field="currency1">Currency 1</th>
+					<th data-field="withOrFor" data-formatter="withOrForFormatter"></th>
+					<th data-field="currency2">Currency 2</th>
 					<th data-field="peerID" data-visible="false">Peer ID</th>
 					<th data-field="smp"
 						data-formatter="tableAllADsOperateFormatter"
