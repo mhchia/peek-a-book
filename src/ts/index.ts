@@ -8,11 +8,18 @@ import 'bootstrap-table';
 
 import { v4 as uuidv4 } from 'uuid';
 
-import { networkConfig, peerServerGetPeersURL } from './config';
-import { PeekABookContract } from './peekABookContract';
+import { TNetworkConfig, networkConfig, peerServerGetPeersURL } from './config';
+import { PeekABookContract, AdvertiseLog } from './peekABookContract';
 
 const pollPeersInterval = 1000;
 const updateOnlinePeriod = 1500;
+
+let config: TNetworkConfig;
+
+// Enable tooltips
+$(function () {
+  $('[data-toggle="tooltip"]').tooltip();
+});
 
 const tableMyADs = $('#tableMyIDs');
 const tableAllADs = $('#tableAllADs');
@@ -27,16 +34,55 @@ const matchButtonName = 'Match';
 const buttonNewAD = document.querySelector(
   'button#buttonNewAD'
 ) as HTMLButtonElement;
-const inputADPair = document.querySelector(
-  'input#inputADPair'
-) as HTMLInputElement;
-const inputADAmount = document.querySelector(
-  'input#inputADAmount'
-) as HTMLInputElement;
 const inputADBuyOrSell = document.querySelector(
   'select#inputADBuyOrSell'
 ) as HTMLSelectElement;
+const inputADAmount = document.querySelector(
+  'input#inputADAmount'
+) as HTMLInputElement;
+const inputCurrency1 = document.querySelector(
+  'input#inputCurrency1'
+) as HTMLInputElement;
+const spanADWithOrFor = document.querySelector(
+  'span#spanADWithOrFor'
+) as HTMLSpanElement;
+const inputCurrency2 = document.querySelector(
+  'input#inputCurrency2'
+) as HTMLInputElement;
 const topBar = document.querySelector('div#topBar') as HTMLDivElement;
+const dataListERC20Token = document.querySelector(
+  'datalist#erc20TokenList'
+) as HTMLDataListElement;
+
+inputADBuyOrSell.onchange = () => {
+  if (inputADBuyOrSell.value === 'buy') {
+    spanADWithOrFor.innerHTML = 'with';
+  } else if (inputADBuyOrSell.value === 'sell') {
+    spanADWithOrFor.innerHTML = 'for';
+  }
+};
+
+inputCurrency1.onkeyup = () => {
+  if (inputCurrency1.value === '') {
+    inputADAmount.placeholder = 'Amount';
+  } else {
+    inputADAmount.placeholder = `Amount(in ${inputCurrency1.value})`;
+  }
+};
+
+// Buy ETH/USDT = Buy `amount(ETH)` `ETH` with `USDT` at `price(USDT)`
+// Sell ETH/USDT = Sell `amount(ETH)` `ETH` for `USDT` at `price(USDT)`
+// Buy X with Y amount using currency Z -> Pair XZ, amount Y, price A per
+const erc20TokenList = require('./erc20_tokens.json') as string[][];
+
+erc20TokenList.forEach((item) => {
+  const fullname = item[0];
+  const abbreviation = item[1];
+  const option = document.createElement('option') as HTMLOptionElement;
+  option.text = fullname;
+  option.value = abbreviation;
+  dataListERC20Token.appendChild(option);
+});
 
 const mapListeningPeers = new Map<string, SMPPeer>();
 
@@ -80,23 +126,63 @@ async function startPollingOnlinePeers() {
 
 let contract: PeekABookContract;
 
+const splitter = '/';
+
+function getPairName(currency1: string, currency2: string): string {
+  return `${currency1}${splitter}${currency2}`;
+}
+
+function getCurrenciesByPairName(pairName: string): string[] {
+  const currencyArr = pairName.split(splitter);
+  if (currencyArr.length !== 2) {
+    throw new Error(
+      `invalid pair name: ${pairName} should be splitted by \`${splitter}\``
+    );
+  }
+  return currencyArr;
+}
+
+function preprocessADs(ads: AdvertiseLog[]) {
+  const reversed = ads.reverse();
+  const res = [];
+  for (const ad of reversed) {
+    try {
+      const curs = getCurrenciesByPairName(ad.pair);
+      res.push({
+        adID: ad.adID.toNumber(),
+        currency1: curs[0],
+        currency2: curs[1],
+        buyOrSell: ad.buyOrSell ? 'Buy' : 'Sell',
+        amount: ad.amount.toNumber(),
+        peerID: ad.peerID,
+      });
+    } catch (e) {
+      // Ignore invalid pair names
+      continue;
+    }
+  }
+  return res;
+}
+
+function getInputPriceExplanation(
+  currency1: string,
+  currency2: string
+): string {
+  return `Price(# ${currency2} per ${currency1})`;
+}
+
 async function updateMyADsTable(contract: PeekABookContract, myAddr: string) {
   const myValidADs = await contract.getValidAdvertisements(null, null, myAddr);
-  const data = myValidADs
-    .map((obj) => {
-      return {
-        adID: obj.adID.toNumber(),
-        pair: obj.pair,
-        buyOrSell: obj.buyOrSell ? 'Buy' : 'Sell',
-        amount: obj.amount.toNumber(),
-        peerID: obj.peerID,
-      };
-    })
-    .reverse();
+  const data = preprocessADs(myValidADs);
   tableMyADs.bootstrapTable('load', data);
 }
 
-function updateValidADsTablePriceMatching(peerID: string, adID: number) {
+function updateValidADsTablePriceMatching(
+  peerID: string,
+  adID: number,
+  currency1: string,
+  currency2: string
+) {
   const price = document.querySelector(
     `input#adsSMPPrice_${adID}`
   ) as HTMLInputElement;
@@ -109,7 +195,7 @@ function updateValidADsTablePriceMatching(peerID: string, adID: number) {
   }
   if (onlinePeers.has(peerID)) {
     price.disabled = false;
-    price.placeholder = 'Price';
+    price.placeholder = getInputPriceExplanation(currency1, currency2);
     matchButton.disabled = false;
   } else {
     price.disabled = true;
@@ -134,7 +220,12 @@ async function updateValidADsTable(contract: PeekABookContract) {
       const tS = performance.now();
       for (const index in data) {
         const ad = data[index];
-        updateValidADsTablePriceMatching(ad.peerID, ad.adID);
+        updateValidADsTablePriceMatching(
+          ad.peerID,
+          ad.adID,
+          ad.currency1,
+          ad.currency2
+        );
       }
       console.debug(
         `Spent ${performance.now() - tS} ms on updating all online status ` +
@@ -144,22 +235,12 @@ async function updateValidADsTable(contract: PeekABookContract) {
   });
 
   const validADs = await contract.getValidAdvertisements();
-  const data = [];
-  for (const obj of validADs.reverse()) {
-    const peerID = obj.peerID;
-    data.push({
-      adID: obj.adID.toNumber(),
-      pair: obj.pair,
-      buyOrSell: obj.buyOrSell ? 'Buy' : 'Sell',
-      amount: obj.amount.toNumber(),
-      peerID: peerID,
-    });
-  }
+  const data = preprocessADs(validADs);
   tableAllADs.bootstrapTable('load', data);
 }
 
 async function main() {
-  if (typeof (window as any).ethereum === undefined) {
+  if ((window as any).ethereum === undefined) {
     emitError('Metamask is required');
   }
   const ethereum = (window as any).ethereum;
@@ -176,7 +257,7 @@ async function main() {
   });
   const provider = new ethers.providers.Web3Provider(ethereum);
   const networkName = (await provider.getNetwork()).name;
-  const config = networkConfig[networkName];
+  config = networkConfig[networkName];
   if (config === undefined) {
     const supportedNetowrks = [];
     for (const n in networkConfig) {
@@ -232,24 +313,32 @@ buttonNewAD.onclick = async () => {
   const buyOrSell = inputADBuyOrSell.value === 'buy';
   // TODO: Should change `AD.number` to `BN`?
   const amount = new BN(inputADAmount.value, 10);
-  if (inputADPair.value === '') {
-    emitError('`Pair` should not be empty');
+  if (inputCurrency1.value === '') {
+    emitError('`Currency1` should not be empty');
+  }
+  if (inputCurrency2.value === '') {
+    emitError('`Currency2` should not be empty');
   }
   if (inputADAmount.value === '') {
     emitError('`Amount` should not be empty');
   }
+  const pairName = getPairName(inputCurrency1.value, inputCurrency2.value);
   try {
-    await contract.advertise({
-      pair: inputADPair.value,
+    const tx = await contract.advertise({
+      pair: pairName,
       buyOrSell: buyOrSell,
       amount: amount.toNumber(),
       peerID: getRandomPeerID(),
     });
-    inputADPair.value = '';
+    inputCurrency1.value = '';
+    inputCurrency2.value = '';
     inputADBuyOrSell.value = '';
     inputADAmount.value = '';
+    const txHash = tx.hash;
+    const txExplorerURL = `${config.etherscanURL}/tx/${txHash}`;
     emitNotification(
-      'Successfully sent the advertisement transaction. ' +
+      'Successfully sent the advertisement transaction ' +
+        `<a href="${txExplorerURL}" class="alert-link">${txHash}</a>. ` +
         'Please wait for a while for its confirmation.'
     );
   } catch (e) {
@@ -264,14 +353,19 @@ buttonNewAD.onclick = async () => {
  * Data events for `tableMyADs`.
  */
 
+(window as any).withOrForFormatter = (value: any, row: any, index: any) => {
+  return row.buyOrSell === 'Buy' ? 'with' : 'for';
+};
+
 (window as any).tableMyADsOperateFormatter = (
   value: any,
   row: any,
   index: any
 ) => {
+  const tooltips = getInputPriceExplanation(row.currency1, row.currency2);
   return `
-  <div class="input-group">
-    <input type="number" min="1" id="myADsSMPListenPrice_${row.adID}" placeholder="Price" aria-label="price" class="form-control" place>
+  <div class="input-group" data-toggle="tooltip" data-placement="top" title="${tooltips}">
+    <input type="number" min="1" id="myADsSMPListenPrice_${row.adID}" placeholder="${tooltips}" aria-label="price" class="form-control" place>
     <div class="input-group-append">
       <button class="btn btn-secondary" id="myADsSMPListenButton_${row.adID}">Listen</button>
     </div>
@@ -347,7 +441,7 @@ const buttonUnlisten = 'Unlisten';
 ) => {
   return [
     '<a class="remove" href="javascript:void(0)" title="Remove">',
-    '<i class="fa fa-trash"></i>',
+    '<i class="fa fa-trash text-danger"></i>',
     '</a>',
   ].join('');
 };
@@ -355,14 +449,17 @@ const buttonUnlisten = 'Unlisten';
 (window as any).tableMyADsDeleteOperateEvents = {
   'click .remove': async (e: any, value: any, row: any, index: any) => {
     try {
-      await contract.invalidate(row.adID);
+      const tx = await contract.invalidate(row.adID);
+      const txHash = tx.hash;
+      const txExplorerURL = `${config.etherscanURL}/tx/${txHash}`;
+      emitNotification(
+        'Successfully sent the invalidate transaction ' +
+          `<a href="${txExplorerURL}" class="alert-link">${txHash}</a>. ` +
+          'Please wait for a while for its confirmation.'
+      );
     } catch (e) {
       emitError(`Failed to invalidate the advertisement on chain: ${e}`);
     }
-    emitNotification(
-      'Successfully sent the invalidate transaction. ' +
-        'Please wait for a while for its confirmation.'
-    );
   },
 };
 
@@ -375,9 +472,10 @@ const buttonUnlisten = 'Unlisten';
   row: any,
   index: any
 ) => {
+  const tooltips = getInputPriceExplanation(row.currency1, row.currency2);
   return `
-  <div class="input-group">
-    <input type="number" min="1" id="adsSMPPrice_${row.adID}" placeholder="Price" aria-label="price" class="form-control" place>
+  <div class="input-group" data-toggle="tooltip" data-placement="top" title="${tooltips}">
+    <input type="number" min="1" id="adsSMPPrice_${row.adID}" placeholder="${tooltips}" aria-label="price" class="form-control" place>
     <div class="input-group-append">
       <button class="btn btn-secondary" id="buttonRun_${row.adID}">${matchButtonName}</button>
     </div>
