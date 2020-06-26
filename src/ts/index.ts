@@ -398,6 +398,10 @@ const buttonUnlisten = 'Unlisten';
 
       const peerInstance = new SMPPeer(price, peerID);
       peerInstance.on('incoming', (remotePeerID: string, result: boolean) => {
+        emitNotification(
+          `Finished outgoing price matching with advertisement #${row.adID}: ` +
+            `price=${price}, result=${result}`
+        );
         addSMPRecord(
           false,
           peerID,
@@ -511,6 +515,9 @@ const buttonUnlisten = 'Unlisten';
       const result = await peerInstance.runSMP(remotePeerID);
       // Since we already get the result, close the peer instance.
       peerInstance.disconnect();
+      emitNotification(
+        `Finished matching price with advertisement #${row.adID}: price=${price}, result=${result}`
+      );
       addSMPRecord(true, localPeerID, row.peerID, row.adID, price, result);
     } catch (e) {
       emitError(`Failed to match with the advertiser: ${e}`);
