@@ -14,6 +14,11 @@ import { PeekABookContract, AdvertiseLog } from './peekABookContract';
 const pollPeersInterval = 1000;
 const updateOnlinePeriod = 1500;
 
+// Enable tooltips
+$(function () {
+  $('[data-toggle="tooltip"]').tooltip();
+});
+
 const tableMyADs = $('#tableMyIDs');
 const tableAllADs = $('#tableAllADs');
 const tableSMPHistory = $('#tableSMPHistory');
@@ -157,13 +162,25 @@ function preprocessADs(ads: AdvertiseLog[]) {
   return res;
 }
 
+function getInputPriceExplanation(
+  currency1: string,
+  currency2: string
+): string {
+  return `Price(# ${currency2} per ${currency1})`;
+}
+
 async function updateMyADsTable(contract: PeekABookContract, myAddr: string) {
   const myValidADs = await contract.getValidAdvertisements(null, null, myAddr);
   const data = preprocessADs(myValidADs);
   tableMyADs.bootstrapTable('load', data);
 }
 
-function updateValidADsTablePriceMatching(peerID: string, adID: number) {
+function updateValidADsTablePriceMatching(
+  peerID: string,
+  adID: number,
+  currency1: string,
+  currency2: string
+) {
   const price = document.querySelector(
     `input#adsSMPPrice_${adID}`
   ) as HTMLInputElement;
@@ -176,7 +193,7 @@ function updateValidADsTablePriceMatching(peerID: string, adID: number) {
   }
   if (onlinePeers.has(peerID)) {
     price.disabled = false;
-    price.placeholder = 'Price';
+    price.placeholder = getInputPriceExplanation(currency1, currency2);
     matchButton.disabled = false;
   } else {
     price.disabled = true;
@@ -201,7 +218,12 @@ async function updateValidADsTable(contract: PeekABookContract) {
       const tS = performance.now();
       for (const index in data) {
         const ad = data[index];
-        updateValidADsTablePriceMatching(ad.peerID, ad.adID);
+        updateValidADsTablePriceMatching(
+          ad.peerID,
+          ad.adID,
+          ad.currency1,
+          ad.currency2
+        );
       }
       console.debug(
         `Spent ${performance.now() - tS} ms on updating all online status ` +
@@ -326,14 +348,19 @@ buttonNewAD.onclick = async () => {
  * Data events for `tableMyADs`.
  */
 
+(window as any).withOrForFormatter = (value: any, row: any, index: any) => {
+  return row.buyOrSell === 'Buy' ? 'with' : 'for';
+};
+
 (window as any).tableMyADsOperateFormatter = (
   value: any,
   row: any,
   index: any
 ) => {
+  const tooltips = getInputPriceExplanation(row.currency1, row.currency2);
   return `
-  <div class="input-group">
-    <input type="number" min="1" id="myADsSMPListenPrice_${row.adID}" placeholder="Price" aria-label="price" class="form-control" place>
+  <div class="input-group" data-toggle="tooltip" data-placement="top" title="${tooltips}">
+    <input type="number" min="1" id="myADsSMPListenPrice_${row.adID}" placeholder="${tooltips}" aria-label="price" class="form-control" place>
     <div class="input-group-append">
       <button class="btn btn-secondary" id="myADsSMPListenButton_${row.adID}">Listen</button>
     </div>
@@ -437,9 +464,10 @@ const buttonUnlisten = 'Unlisten';
   row: any,
   index: any
 ) => {
+  const tooltips = getInputPriceExplanation(row.currency1, row.currency2);
   return `
-  <div class="input-group">
-    <input type="number" min="1" id="adsSMPPrice_${row.adID}" placeholder="Price" aria-label="price" class="form-control" place>
+  <div class="input-group" data-toggle="tooltip" data-placement="top" title="${tooltips}">
+    <input type="number" min="1" id="adsSMPPrice_${row.adID}" placeholder="${tooltips}" aria-label="price" class="form-control" place>
     <div class="input-group-append">
       <button class="btn btn-secondary" id="buttonRun_${row.adID}">${matchButtonName}</button>
     </div>
