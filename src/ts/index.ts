@@ -12,7 +12,7 @@ import { TNetworkConfig, networkConfig, peerServerGetPeersURL } from './config';
 import { PeekABookContract, AdvertiseLog } from './peekABookContract';
 
 const pollPeersInterval = 1000;
-const updateOnlinePeriod = 1500;
+const updateOnlinePeriod = 500;
 
 let config: TNetworkConfig;
 
