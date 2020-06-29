@@ -16,11 +16,6 @@ const updateOnlinePeriod = 500;
 
 let config: TNetworkConfig;
 
-// Enable tooltips
-$(function () {
-  $('[data-toggle="tooltip"]').tooltip();
-});
-
 const tableMyADs = $('#tableMyIDs');
 const tableAllADs = $('#tableAllADs');
 const tableSMPHistory = $('#tableSMPHistory');
@@ -360,7 +355,7 @@ buttonNewAD.onclick = async () => {
 ) => {
   const tooltips = getInputPriceExplanation(row.currency1, row.currency2);
   return `
-  <div class="input-group" data-toggle="tooltip" data-placement="top" title="${tooltips}">
+  <div class="input-group">
     <input type="number" min="1" id="myADsSMPListenPrice_${row.adID}" placeholder="${tooltips}" aria-label="price" class="form-control" place>
     <div class="input-group-append">
       <button class="btn btn-secondary" id="myADsSMPListenButton_${row.adID}">Listen</button>
@@ -490,7 +485,7 @@ const buttonUnlisten = 'Unlisten';
 ) => {
   const tooltips = getInputPriceExplanation(row.currency1, row.currency2);
   return `
-  <div class="input-group" data-toggle="tooltip" data-placement="top" title="${tooltips}">
+  <div class="input-group">
     <input type="number" min="1" id="adsSMPPrice_${row.adID}" placeholder="${tooltips}" aria-label="price" class="form-control" place>
     <div class="input-group-append">
       <button class="btn btn-secondary" id="buttonRun_${row.adID}">${matchButtonName}</button>
