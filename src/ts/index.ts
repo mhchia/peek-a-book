@@ -12,14 +12,9 @@ import { TNetworkConfig, networkConfig, peerServerGetPeersURL } from './config';
 import { PeekABookContract, AdvertiseLog } from './peekABookContract';
 
 const pollPeersInterval = 1000;
-const updateOnlinePeriod = 1500;
+const updateOnlinePeriod = 500;
 
 let config: TNetworkConfig;
-
-// Enable tooltips
-$(function () {
-  $('[data-toggle="tooltip"]').tooltip();
-});
 
 const tableMyADs = $('#tableMyIDs');
 const tableAllADs = $('#tableAllADs');
@@ -152,7 +147,7 @@ function preprocessADs(ads: AdvertiseLog[]) {
         adID: ad.adID.toNumber(),
         currency1: curs[0],
         currency2: curs[1],
-        buyOrSell: ad.buyOrSell ? 'Buy' : 'Sell',
+        buyOrSell: ad.buyOrSell,
         amount: ad.amount.toNumber(),
         peerID: ad.peerID,
       });
@@ -218,14 +213,17 @@ async function updateValidADsTable(contract: PeekABookContract) {
     tableAllADs.off('post-body.bs.table');
     timeoutID = setInterval(() => {
       const tS = performance.now();
-      for (const index in data) {
-        const ad = data[index];
-        updateValidADsTablePriceMatching(
-          ad.peerID,
-          ad.adID,
-          ad.currency1,
-          ad.currency2
-        );
+      for (const ad of data) {
+        try {
+          updateValidADsTablePriceMatching(
+            ad.peerID,
+            ad.adID,
+            ad.currency1,
+            ad.currency2
+          );
+        } catch (e) {
+          // Ignore error to make `for` loop finish.
+        }
       }
       console.debug(
         `Spent ${performance.now() - tS} ms on updating all online status ` +
@@ -344,18 +342,11 @@ buttonNewAD.onclick = async () => {
   } catch (e) {
     emitError(`Failed to send the advertisement transaction on chain: ${e}`);
   }
-  // TODO:
-  //  Refresh table MyADs in a few seconds?
-  //  Probably do it with ws.
 };
 
 /**
  * Data events for `tableMyADs`.
  */
-
-(window as any).withOrForFormatter = (value: any, row: any, index: any) => {
-  return row.buyOrSell === 'Buy' ? 'with' : 'for';
-};
 
 (window as any).tableMyADsOperateFormatter = (
   value: any,
@@ -364,7 +355,7 @@ buttonNewAD.onclick = async () => {
 ) => {
   const tooltips = getInputPriceExplanation(row.currency1, row.currency2);
   return `
-  <div class="input-group" data-toggle="tooltip" data-placement="top" title="${tooltips}">
+  <div class="input-group">
     <input type="number" min="1" id="myADsSMPListenPrice_${row.adID}" placeholder="${tooltips}" aria-label="price" class="form-control" place>
     <div class="input-group-append">
       <button class="btn btn-secondary" id="myADsSMPListenButton_${row.adID}">Listen</button>
@@ -471,6 +462,22 @@ const buttonUnlisten = 'Unlisten';
  * Data events for `tableAllADs`.
  */
 
+
+(window as any).adsDescriptionFormatter = (
+  value: any,
+  row: any,
+  index: any
+) => {
+  let buyOrSell: string;
+  if (row.buyOrSell) {
+    buyOrSell = '<span class="text-success"><strong>buying</strong></span>';
+  } else {
+    buyOrSell = '<span class="text-danger"><strong>selling</strong></span>';
+  }
+  const withOrFor: string = row.buyOrSell ? 'with' : 'for';
+  return `Advertiser <strong>${row.adID}</strong> is ${buyOrSell} <strong>${row.amount}</strong> <strong>${row.currency1}</strong> ${withOrFor} <strong>${row.currency2}</strong>`;
+};
+
 (window as any).tableAllADsOperateFormatter = (
   value: any,
   row: any,
@@ -478,7 +485,7 @@ const buttonUnlisten = 'Unlisten';
 ) => {
   const tooltips = getInputPriceExplanation(row.currency1, row.currency2);
   return `
-  <div class="input-group" data-toggle="tooltip" data-placement="top" title="${tooltips}">
+  <div class="input-group">
     <input type="number" min="1" id="adsSMPPrice_${row.adID}" placeholder="${tooltips}" aria-label="price" class="form-control" place>
     <div class="input-group-append">
       <button class="btn btn-secondary" id="buttonRun_${row.adID}">${matchButtonName}</button>
