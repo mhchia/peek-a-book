@@ -152,7 +152,7 @@ function preprocessADs(ads: AdvertiseLog[]) {
         adID: ad.adID.toNumber(),
         currency1: curs[0],
         currency2: curs[1],
-        buyOrSell: ad.buyOrSell ? 'Buy' : 'Sell',
+        buyOrSell: ad.buyOrSell,
         amount: ad.amount.toNumber(),
         peerID: ad.peerID,
       });
@@ -344,18 +344,11 @@ buttonNewAD.onclick = async () => {
   } catch (e) {
     emitError(`Failed to send the advertisement transaction on chain: ${e}`);
   }
-  // TODO:
-  //  Refresh table MyADs in a few seconds?
-  //  Probably do it with ws.
 };
 
 /**
  * Data events for `tableMyADs`.
  */
-
-(window as any).withOrForFormatter = (value: any, row: any, index: any) => {
-  return row.buyOrSell === 'Buy' ? 'with' : 'for';
-};
 
 (window as any).tableMyADsOperateFormatter = (
   value: any,
@@ -470,6 +463,22 @@ const buttonUnlisten = 'Unlisten';
 /**
  * Data events for `tableAllADs`.
  */
+
+
+(window as any).adsDescriptionFormatter = (
+  value: any,
+  row: any,
+  index: any
+) => {
+  let buyOrSell: string;
+  if (row.buyOrSell) {
+    buyOrSell = '<span class="text-success"><strong>buying</strong></span>';
+  } else {
+    buyOrSell = '<span class="text-danger"><strong>selling</strong></span>';
+  }
+  const withOrFor: string = row.buyOrSell ? 'with' : 'for';
+  return `Advertiser <strong>${row.adID}</strong> is ${buyOrSell} <strong>${row.amount}</strong> <strong>${row.currency1}</strong> ${withOrFor} <strong>${row.currency2}</strong>`;
+};
 
 (window as any).tableAllADsOperateFormatter = (
   value: any,
