@@ -218,14 +218,17 @@ async function updateValidADsTable(contract: PeekABookContract) {
     tableAllADs.off('post-body.bs.table');
     timeoutID = setInterval(() => {
       const tS = performance.now();
-      for (const index in data) {
-        const ad = data[index];
-        updateValidADsTablePriceMatching(
-          ad.peerID,
-          ad.adID,
-          ad.currency1,
-          ad.currency2
-        );
+      for (const ad of data) {
+        try {
+          updateValidADsTablePriceMatching(
+            ad.peerID,
+            ad.adID,
+            ad.currency1,
+            ad.currency2
+          );
+        } catch (e) {
+          // Ignore error to make `for` loop finish.
+        }
       }
       console.debug(
         `Spent ${performance.now() - tS} ms on updating all online status ` +
