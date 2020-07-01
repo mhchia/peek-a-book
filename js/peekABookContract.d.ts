@@ -15,9 +15,18 @@ declare type BlockFilter = {
     toBlock?: ethers.providers.BlockTag;
 };
 declare type AD = {
-    pair: string;
     buyOrSell: boolean;
     amount: number;
+    currency1: string;
+    currency2: string;
+    peerID: string;
+};
+declare type ADWithID = {
+    adID: BigNumber;
+    buyOrSell: boolean;
+    amount: number;
+    currency1: string;
+    currency2: string;
     peerID: string;
 };
 export declare class PeekABookContract {
@@ -27,8 +36,14 @@ export declare class PeekABookContract {
     constructor(provider: ethers.providers.BaseProvider, contractInstance: ethers.Contract, blockFilter?: BlockFilter | undefined);
     advertise(ad: AD): Promise<any>;
     invalidate(adID: number): Promise<any>;
-    getAdvertiseLogs(pair?: string | null, buyOrSell?: boolean | null, advertiser?: string | null): Promise<AdvertiseLog[]>;
+    getAdvertiseLogs(pair?: {
+        currency1: string;
+        currency2: string;
+    } | null, buyOrSell?: boolean | null, advertiser?: string | null): Promise<ADWithID[]>;
     getInvalidateLogs(): Promise<InvalidateLog[]>;
-    getValidAdvertisements(pair?: string | null, buyOrSell?: boolean | null, advertiser?: string | null): Promise<AdvertiseLog[]>;
+    getValidAdvertisements(pair?: {
+        currency1: string;
+        currency2: string;
+    } | null, buyOrSell?: boolean | null, advertiser?: string | null): Promise<ADWithID[]>;
 }
 export {};
