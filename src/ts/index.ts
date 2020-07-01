@@ -8,7 +8,11 @@ import 'bootstrap-table';
 
 import { v4 as uuidv4 } from 'uuid';
 
-import { TNetworkConfig, networkConfig, peerServerGetPeersURL } from './config';
+import {
+  TNetworkConfig,
+  networkConfig,
+  peerServerGetPeersURL,
+} from './configs';
 import { PeekABookContract, AdvertiseLog } from './peekABookContract';
 
 const pollPeersInterval = 1000;
@@ -65,9 +69,6 @@ inputCurrency1.onkeyup = () => {
   }
 };
 
-// Buy ETH/USDT = Buy `amount(ETH)` `ETH` with `USDT` at `price(USDT)`
-// Sell ETH/USDT = Sell `amount(ETH)` `ETH` for `USDT` at `price(USDT)`
-// Buy X with Y amount using currency Z -> Pair XZ, amount Y, price A per
 const erc20TokenList = require('./erc20_tokens.json') as string[][];
 
 erc20TokenList.forEach((item) => {
@@ -167,12 +168,12 @@ function getInputPriceExplanation(
 }
 
 async function updateMyADsTable(contract: PeekABookContract, myAddr: string) {
-  const myValidADs = await contract.getValidAdvertisements(null, null, myAddr);
-  const data = preprocessADs(myValidADs);
+  const myADs = await contract.getValidAdvertisements(null, null, myAddr);
+  const data = preprocessADs(myADs);
   tableMyADs.bootstrapTable('load', data);
 }
 
-function updateValidADsTablePriceMatching(
+function updateAllADsTablePriceMatching(
   peerID: string,
   adID: number,
   currency1: string,
@@ -201,7 +202,7 @@ function updateValidADsTablePriceMatching(
 
 let timeoutID: NodeJS.Timeout | undefined;
 
-async function updateValidADsTable(contract: PeekABookContract) {
+async function updateAllADsTable(contract: PeekABookContract) {
   // Remove the previous timer if any because we are setting up a new one later in this function.
   if (timeoutID !== undefined) {
     clearInterval(timeoutID);
@@ -215,7 +216,7 @@ async function updateValidADsTable(contract: PeekABookContract) {
       const tS = performance.now();
       for (const ad of data) {
         try {
-          updateValidADsTablePriceMatching(
+          updateAllADsTablePriceMatching(
             ad.peerID,
             ad.adID,
             ad.currency1,
@@ -279,7 +280,7 @@ async function main() {
   });
   await startPollingOnlinePeers();
   await updateMyADsTable(contract, await signer0.getAddress());
-  await updateValidADsTable(contract);
+  await updateAllADsTable(contract);
   tableSMPHistory.bootstrapTable({});
 }
 
@@ -345,7 +346,25 @@ buttonNewAD.onclick = async () => {
 };
 
 /**
- * Data events for `tableMyADs`.
+ * Tables
+ */
+(window as any).adsDescriptionFormatter = (
+  value: any,
+  row: any,
+  index: any
+) => {
+  let buyOrSell: string;
+  if (row.buyOrSell) {
+    buyOrSell = '<span class="text-success"><strong>buying</strong></span>';
+  } else {
+    buyOrSell = '<span class="text-danger"><strong>selling</strong></span>';
+  }
+  const withOrFor: string = row.buyOrSell ? 'with' : 'for';
+  return `Advertiser <strong>${row.adID}</strong> is ${buyOrSell} <strong>${row.amount}</strong> <strong>${row.currency1}</strong> ${withOrFor} <strong>${row.currency2}</strong>`;
+};
+
+/**
+ * TableMyADs
  */
 
 (window as any).tableMyADsOperateFormatter = (
@@ -356,9 +375,9 @@ buttonNewAD.onclick = async () => {
   const tooltips = getInputPriceExplanation(row.currency1, row.currency2);
   return `
   <div class="input-group">
-    <input type="number" min="1" id="myADsSMPListenPrice_${row.adID}" placeholder="${tooltips}" aria-label="price" class="form-control" place>
+    <input type="number" min="1" id="myADsListenPrice_${row.adID}" placeholder="${tooltips}" aria-label="price" class="form-control" place>
     <div class="input-group-append">
-      <button class="btn btn-secondary" id="myADsSMPListenButton_${row.adID}">Listen</button>
+      <button class="btn btn-secondary" id="myADsListenButton_${row.adID}">Listen</button>
     </div>
   </div>
   `;
@@ -370,14 +389,14 @@ const buttonUnlisten = 'Unlisten';
 (window as any).tableMyADsOperateEvents = {
   'click .btn': async (e: any, value: any, row: any, index: any) => {
     const priceInput = document.querySelector(
-      `input#myADsSMPListenPrice_${row.adID}`
+      `input#myADsListenPrice_${row.adID}`
     ) as HTMLInputElement;
     const price = priceInput.value;
     if (price === '') {
       emitError('`Price` should not be empty');
     }
     const button = document.querySelector(
-      `button#myADsSMPListenButton_${row.adID}`
+      `button#myADsListenButton_${row.adID}`
     ) as HTMLButtonElement;
     const peerID = row.peerID;
     if (button.innerHTML === buttonListen) {
@@ -459,23 +478,8 @@ const buttonUnlisten = 'Unlisten';
 };
 
 /**
- * Data events for `tableAllADs`.
+ * tableAllADs
  */
-
-(window as any).adsDescriptionFormatter = (
-  value: any,
-  row: any,
-  index: any
-) => {
-  let buyOrSell: string;
-  if (row.buyOrSell) {
-    buyOrSell = '<span class="text-success"><strong>buying</strong></span>';
-  } else {
-    buyOrSell = '<span class="text-danger"><strong>selling</strong></span>';
-  }
-  const withOrFor: string = row.buyOrSell ? 'with' : 'for';
-  return `Advertiser <strong>${row.adID}</strong> is ${buyOrSell} <strong>${row.amount}</strong> <strong>${row.currency1}</strong> ${withOrFor} <strong>${row.currency2}</strong>`;
-};
 
 (window as any).tableAllADsOperateFormatter = (
   value: any,
