@@ -20,7 +20,37 @@ type BlockFilter = {
   toBlock?: ethers.providers.BlockTag;
 };
 
-type AD = { pair: string; buyOrSell: boolean; amount: number; peerID: string };
+type AD = {
+  buyOrSell: boolean;
+  amount: number;
+  currency1: string;
+  currency2: string;
+  peerID: string;
+};
+type ADWithID = {
+  adID: BigNumber;
+  buyOrSell: boolean;
+  amount: number;
+  currency1: string;
+  currency2: string;
+  peerID: string;
+};
+
+const splitter = '/';
+
+function getPairName(currency1: string, currency2: string): string {
+  return `${currency1}${splitter}${currency2}`;
+}
+
+function getCurrenciesByPairName(pairName: string): string[] {
+  const currencyArr = pairName.split(splitter);
+  if (currencyArr.length !== 2) {
+    throw new Error(
+      `invalid pair name: ${pairName} should be splitted by \`${splitter}\``
+    );
+  }
+  return currencyArr;
+}
 
 async function getContractLogs<T>(
   eventFilter: ethers.EventFilter,
@@ -37,7 +67,15 @@ async function getContractLogs<T>(
     logFilter.toBlock = blockFilter.toBlock;
   }
   const rawLogs = await provider.getLogs(logFilter);
-  return rawLogs.map(logDecoder);
+  const res: T[] = [];
+  for (const log of rawLogs) {
+    try {
+      res.push(logDecoder(log));
+    } catch (e) {
+      // Ignore invalid formats
+    }
+  }
+  return res;
 }
 
 export class PeekABookContract {
@@ -49,7 +87,7 @@ export class PeekABookContract {
 
   async advertise(ad: AD) {
     return await this.contractInstance.advertise(
-      ad.pair,
+      getPairName(ad.currency1, ad.currency2),
       ad.buyOrSell,
       ad.amount,
       ad.peerID,
@@ -63,12 +101,15 @@ export class PeekABookContract {
     });
   }
 
-  // uint adID, string indexed pairIndex, string pair, bool indexed buyOrSell, uint amount, string peerID
   async getAdvertiseLogs(
-    pair: string | null = null,
+    pair: { currency1: string; currency2: string } | null = null,
     buyOrSell: boolean | null = null,
     advertiser: string | null = null
   ) {
+    let pairStr: string | null = null;
+    if (pair !== null) {
+      pairStr = getPairName(pair.currency1, pair.currency2);
+    }
     // FIXME: Encode `boolean` in a better way, instead of doing it our own.
     let buyOrSellEncoded: string | null = null;
     if (buyOrSell !== null) {
@@ -80,7 +121,7 @@ export class PeekABookContract {
     }
     const eventAdvertiseFilter = this.contractInstance.filters.Advertise(
       null,
-      pair,
+      pairStr,
       null,
       buyOrSellEncoded,
       null,
@@ -90,7 +131,7 @@ export class PeekABookContract {
     const decodeEventAdvertise = (event: {
       data: string;
       topics: string[];
-    }): AdvertiseLog => {
+    }): ADWithID => {
       const objData = ethers.utils.defaultAbiCoder.decode(
         ['uint', 'string', 'uint', 'string'],
         event.data
@@ -99,15 +140,18 @@ export class PeekABookContract {
         ['bool'],
         event.topics[2]
       );
+      const pair = objData[1];
+      const parsedPair = getCurrenciesByPairName(pair);
       return {
         adID: objData[0],
-        pair: objData[1],
+        currency1: parsedPair[0],
+        currency2: parsedPair[1],
         buyOrSell: objTopics[0],
         amount: objData[2],
         peerID: objData[3],
       };
     };
-    return await getContractLogs<AdvertiseLog>(
+    return await getContractLogs<ADWithID>(
       eventAdvertiseFilter,
       this.provider,
       decodeEventAdvertise,
@@ -132,12 +176,13 @@ export class PeekABookContract {
   }
 
   async getValidAdvertisements(
-    pair: string | null = null,
+    pair: { currency1: string; currency2: string } | null = null,
     buyOrSell: boolean | null = null,
     advertiser: string | null = null
-  ) {
+  ): Promise<ADWithID[]> {
     // NOTE: We iterate both log arrays twice after receiving from the contract.
     //  Porbably it makes sense to refactor.
+
     const advertiseLogs = await this.getAdvertiseLogs(
       pair,
       buyOrSell,
