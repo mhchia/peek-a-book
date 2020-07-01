@@ -462,7 +462,6 @@ const buttonUnlisten = 'Unlisten';
  * Data events for `tableAllADs`.
  */
 
-
 (window as any).adsDescriptionFormatter = (
   value: any,
   row: any,
