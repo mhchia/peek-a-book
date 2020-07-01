@@ -23,9 +23,8 @@ async function getContract(): Promise<ethers.Contract> {
 describe('PeekABookContract', () => {
   let contract: ethers.Contract;
   let peekABookContract: PeekABookContract;
-
-  const btcPair = 'BTCUSDT';
-  const ethPair = 'ETHUSDT';
+  const pair0 = { currency1: 'DAI', currency2: 'USDC' };
+  const pair1 = { currency1: 'USDC', currency2: 'USDC' };
 
   beforeAll(async () => {
     contract = await getContract();
@@ -33,10 +32,10 @@ describe('PeekABookContract', () => {
       fromBlock: 0,
     });
     const ads = [
-      { pair: btcPair, buyOrSell: true, amount: 1, peerID: 'a' },
-      { pair: btcPair, buyOrSell: true, amount: 2, peerID: 'b' },
-      { pair: ethPair, buyOrSell: true, amount: 3, peerID: 'c' },
-      { pair: ethPair, buyOrSell: false, amount: 4, peerID: 'd' },
+      { ...pair0, buyOrSell: true, amount: 1, peerID: 'a' },
+      { ...pair0, buyOrSell: true, amount: 2, peerID: 'b' },
+      { ...pair1, buyOrSell: true, amount: 3, peerID: 'c' },
+      { ...pair1, buyOrSell: false, amount: 4, peerID: 'd' },
     ];
     const invalidates: number[] = [2];
     for (const ad of ads) {
@@ -55,14 +54,11 @@ describe('PeekABookContract', () => {
     // Test: without filters
     expect((await peekABookContract.getAdvertiseLogs()).length).toEqual(4);
     // Test: filter with `pair`
-    expect((await peekABookContract.getAdvertiseLogs(btcPair)).length).toEqual(
-      2
-    );
-    expect((await peekABookContract.getAdvertiseLogs(ethPair)).length).toEqual(
-      2
-    );
+    expect((await peekABookContract.getAdvertiseLogs(pair0)).length).toEqual(2);
+    expect((await peekABookContract.getAdvertiseLogs(pair1)).length).toEqual(2);
+    const pairNotFound = { currency1: 'LoL', currency2: 'USDC' };
     expect(
-      (await peekABookContract.getAdvertiseLogs('LTCUSDT')).length
+      (await peekABookContract.getAdvertiseLogs(pairNotFound)).length
     ).toEqual(0);
     // Test: filter with `buyOrSell`
     expect(
@@ -80,25 +76,25 @@ describe('PeekABookContract', () => {
     ).toEqual(0);
     // Test: multiple filters altogether
     expect(
-      (await peekABookContract.getAdvertiseLogs(btcPair, null, addr0)).length
+      (await peekABookContract.getAdvertiseLogs(pair0, null, addr0)).length
     ).toEqual(2);
     expect(
-      (await peekABookContract.getAdvertiseLogs(btcPair, true, addr0)).length
+      (await peekABookContract.getAdvertiseLogs(pair0, true, addr0)).length
     ).toEqual(2);
     expect(
-      (await peekABookContract.getAdvertiseLogs(btcPair, false, addr1)).length
+      (await peekABookContract.getAdvertiseLogs(pair0, false, addr1)).length
     ).toEqual(0);
     expect(
-      (await peekABookContract.getAdvertiseLogs(ethPair, null, addr0)).length
+      (await peekABookContract.getAdvertiseLogs(pair1, null, addr0)).length
     ).toEqual(2);
     expect(
-      (await peekABookContract.getAdvertiseLogs(ethPair, true, addr0)).length
+      (await peekABookContract.getAdvertiseLogs(pair1, true, addr0)).length
     ).toEqual(1);
     expect(
-      (await peekABookContract.getAdvertiseLogs(ethPair, false, addr0)).length
+      (await peekABookContract.getAdvertiseLogs(pair1, false, addr0)).length
     ).toEqual(1);
     expect(
-      (await peekABookContract.getAdvertiseLogs(ethPair, false, addr1)).length
+      (await peekABookContract.getAdvertiseLogs(pair1, false, addr1)).length
     ).toEqual(0);
   });
 
