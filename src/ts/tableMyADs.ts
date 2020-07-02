@@ -111,7 +111,13 @@ export async function cbButtonNewAD(
   }
 }
 
-const mapListeningPeers = new Map<string, SMPPeer>();
+/**
+ * Table
+ */
+
+type PeerInfo = { smpPeer: SMPPeer; price: string };
+
+const mapListeningPeers = new Map<string, PeerInfo>();
 
 export async function updateMyADsTable(
   contract: PeekABookContract,
@@ -126,20 +132,43 @@ export async function updateMyADsTable(
  * Formatter and events
  */
 
+function getListenPriceDOMID(adID: BigNumber) {
+  return `myADsListenPrice_${adID}`;
+}
+
+function getListenButtonDOMID(adID: BigNumber) {
+  return `myADsListenButton_${adID}`;
+}
+
 export function tableMyADsListenFormatter(
   adID: BigNumber,
+  peerID: string,
   currency1: string,
   currency2: string
 ) {
   const tooltips = getInputPriceExplanation(currency1, currency2);
-  return `
-  <div class="input-group">
-    <input type="number" min="1" id="myADsListenPrice_${adID}" placeholder="${tooltips}" aria-label="price" class="form-control" place>
-    <div class="input-group-append">
-      <button class="btn btn-secondary" id="myADsListenButton_${adID}">Listen</button>
-    </div>
+  const priceInputID = getListenPriceDOMID(adID);
+  const buttonID = getListenButtonDOMID(adID);
+  const peerInfo = mapListeningPeers.get(peerID);
+  // Already listening to the peerID. Use the previous price and disable the button and input.
+  if (peerInfo !== undefined) {
+    return `
+<div class="input-group">
+  <input type="number" min="1" id="${priceInputID}" placeholder="${tooltips}" aria-label="price" class="form-control" place value="${peerInfo.price}" disabled>
+  <div class="input-group-append">
+    <button class="btn btn-secondary" id="${buttonID}">Unlisten</button>
   </div>
-  `;
+</div>`;
+  } else {
+    return `
+<div class="input-group">
+  <input type="number" min="1" id="${priceInputID}" placeholder="${tooltips}" aria-label="price" class="form-control" place>
+  <div class="input-group-append">
+    <button class="btn btn-secondary" id="${buttonID}">Listen</button>
+  </div>
+</div>
+    `;
+  }
 }
 
 const buttonListen = 'Listen';
@@ -150,36 +179,29 @@ export async function tableMyADsListenButtonCB(
   peerID: string
 ) {
   const priceInput = document.querySelector(
-    `input#myADsListenPrice_${adID}`
+    `input#${getListenPriceDOMID(adID)}`
   ) as HTMLInputElement;
-  const price = priceInput.value;
-  if (price === '') {
-    emitError('`Price` should not be empty');
-  }
   const button = document.querySelector(
-    `button#myADsListenButton_${adID}`
+    `button#${getListenButtonDOMID(adID)}`
   ) as HTMLButtonElement;
+  // Haven't listened
   if (button.innerHTML === buttonListen) {
     if (mapListeningPeers.has(peerID)) {
       emitError(`Peer ID is already listened: peerID=${peerID}`);
     }
     priceInput.disabled = true;
     button.disabled = true;
-
+    const price = priceInput.value;
+    if (price === '') {
+      emitError('`Price` should not be empty');
+    }
     const peerInstance = new SMPPeer(price, peerID);
     peerInstance.on('incoming', (remotePeerID: string, result: boolean) => {
       emitNotification(
         `Finished outgoing price matching with advertisement #${adID}: ` +
           `price=${price}, result=${result}`
       );
-      addMatchingRecord(
-        false,
-        peerID,
-        remotePeerID,
-        adID,
-        priceInput.value,
-        result
-      );
+      addMatchingRecord(false, peerID, remotePeerID, adID, price, result);
     });
     try {
       await peerInstance.connectToPeerServer();
@@ -190,14 +212,15 @@ export async function tableMyADsListenButtonCB(
     }
     // Finished connecting to the peer server. Now, we can safely add the peer in the map.
     const newPeerID = peerInstance.id;
-    mapListeningPeers.set(newPeerID, peerInstance);
+    mapListeningPeers.set(newPeerID, { smpPeer: peerInstance, price: price });
     button.disabled = false;
     button.innerHTML = buttonUnlisten;
+    // Already listened
   } else if (button.innerHTML === buttonUnlisten) {
-    const peerInstance = mapListeningPeers.get(peerID);
+    const peerInfo = mapListeningPeers.get(peerID);
     mapListeningPeers.delete(peerID);
-    if (peerInstance !== undefined) {
-      peerInstance.disconnect();
+    if (peerInfo !== undefined) {
+      peerInfo.smpPeer.disconnect();
     }
     priceInput.disabled = false;
     button.innerHTML = buttonListen;
