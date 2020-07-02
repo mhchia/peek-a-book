@@ -174,6 +174,30 @@ export function tableMyADsListenFormatter(
 const buttonListen = 'Listen';
 const buttonUnlisten = 'Unlisten';
 
+function listenerCellReset(adID: BigNumber) {
+  const priceInput = document.querySelector(
+    `input#${getListenPriceDOMID(adID)}`
+  ) as HTMLInputElement;
+  const button = document.querySelector(
+    `button#${getListenButtonDOMID(adID)}`
+  ) as HTMLButtonElement;
+  priceInput.disabled = false;
+  button.disabled = false;
+  button.innerHTML = buttonListen;
+}
+
+function listenerCellListen(adID: BigNumber) {
+  const priceInput = document.querySelector(
+    `input#${getListenPriceDOMID(adID)}`
+  ) as HTMLInputElement;
+  const button = document.querySelector(
+    `button#${getListenButtonDOMID(adID)}`
+  ) as HTMLButtonElement;
+  priceInput.disabled = true;
+  button.disabled = true;
+  button.innerHTML = buttonUnlisten;
+}
+
 export async function tableMyADsListenButtonCB(
   adID: BigNumber,
   peerID: string
@@ -189,12 +213,11 @@ export async function tableMyADsListenButtonCB(
     if (mapListeningPeers.has(peerID)) {
       emitError(`Peer ID is already listened: peerID=${peerID}`);
     }
-    priceInput.disabled = true;
-    button.disabled = true;
     const price = priceInput.value;
     if (price === '') {
       emitError('`Price` should not be empty');
     }
+    listenerCellListen(adID);
     const peerInstance = new SMPPeer(price, peerID);
     peerInstance.on('incoming', (remotePeerID: string, result: boolean) => {
       emitNotification(
@@ -203,18 +226,22 @@ export async function tableMyADsListenButtonCB(
       );
       addMatchingRecord(false, peerID, remotePeerID, adID, price, result);
     });
+    peerInstance.on('error', (error: string) => {
+      mapListeningPeers.delete(peerID);
+      listenerCellReset(adID);
+      emitError(
+        `Listener listening to advertisement #${adID} is dead: ${error}`
+      );
+    });
     try {
       await peerInstance.connectToPeerServer();
     } catch (e) {
-      priceInput.disabled = false;
-      button.disabled = false;
+      listenerCellReset(adID);
       emitError(`Failed to listen to the matching requests: ${e}`);
     }
     // Finished connecting to the peer server. Now, we can safely add the peer in the map.
     const newPeerID = peerInstance.id;
     mapListeningPeers.set(newPeerID, { smpPeer: peerInstance, price: price });
-    button.disabled = false;
-    button.innerHTML = buttonUnlisten;
     // Already listened
   } else if (button.innerHTML === buttonUnlisten) {
     const peerInfo = mapListeningPeers.get(peerID);
@@ -222,8 +249,7 @@ export async function tableMyADsListenButtonCB(
     if (peerInfo !== undefined) {
       peerInfo.smpPeer.disconnect();
     }
-    priceInput.disabled = false;
-    button.innerHTML = buttonListen;
+    listenerCellReset(adID);
   } else {
     // Sanity check
     emitError(`Unrecognized button innerHTML: ${button.innerHTML}`);
