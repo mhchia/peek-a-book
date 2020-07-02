@@ -93,7 +93,12 @@ async function main() {
   row: any,
   index: any
 ) => {
-  return tableMyADsListenFormatter(row.adID, row.currency1, row.currency2);
+  return tableMyADsListenFormatter(
+    row.adID,
+    row.peerID,
+    row.currency1,
+    row.currency2
+  );
 };
 
 (window as any).tableMyADsDeleteFormatter = (
