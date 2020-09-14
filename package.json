@@ -5,7 +5,8 @@
   "scripts": {
     "lint": "tsdx lint src test",
     "build": "truffle compile; mkdir -p build; npx webpack --config webpack.config.js && cp src/index.html build/",
-    "test": "truffle compile; ganache-cli & ganache_pid=$!; sleep 2; tsdx test test/; kill $ganache_pid;"
+    "test": "truffle compile; ganache-cli & ganache_pid=$!; sleep 2; tsdx test test/; kill $ganache_pid;",
+    "run-peer-server": "npx peerjs --port 8000 --key peerjs --sslkey ./certs/privkey.pem --sslcert certs/cert.pem --path /myapp --allow_discovery"
   },
   "prettier": {
     "printWidth": 80,
