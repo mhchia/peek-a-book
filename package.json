@@ -37,7 +37,7 @@
     "tslib": "^2.0.0",
     "typescript": "^3.9.2",
     "webpack": "^4.43.0",
-    "webpack-cli": "^3.3.11"
+    "webpack-cli": "^3.3.12"
   },
   "dependencies": {
     "@types/uuid": "^8.0.0",
